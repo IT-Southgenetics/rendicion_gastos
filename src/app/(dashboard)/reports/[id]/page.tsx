@@ -1,0 +1,279 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
+import { CloseReportButton } from "@/components/reports/CloseReportButton";
+import { RealtimeBudgetSection } from "@/components/reports/RealtimeBudgetSection";
+import { toUSD, totalInUSD, fmt } from "@/lib/currency";
+import type { Tables } from "@/types/database";
+
+type WeeklyReport = Tables<"weekly_reports">;
+type Expense      = Tables<"expenses">;
+
+const CATEGORY_LABELS: Record<string, string> = {
+  transport:       "Transporte",
+  food:            "Comida y bebida",
+  accommodation:   "Alojamiento",
+  fuel:            "Combustible",
+  communication:   "Comunicación",
+  office_supplies: "Insumos de oficina",
+  entertainment:   "Entretenimiento",
+  other:           "Otros",
+};
+
+interface ReportDetailPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function ReportDetailPage({ params }: ReportDetailPageProps) {
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const [{ data: report }, { data: expenses }, { data: presets }] = await Promise.all([
+    supabase.from("weekly_reports").select("*").eq("id", id).eq("user_id", session.user.id).maybeSingle(),
+    supabase.from("expenses").select("*").eq("report_id", id).order("created_at", { ascending: false }),
+    supabase.from("exchange_rate_presets").select("currency, rate"),
+  ]);
+
+  if (!report) notFound();
+
+  const r = report as WeeklyReport;
+  const isOpen = r.status === "open";
+  const startDate = new Date(r.week_start + "T12:00:00");
+  const endDate   = new Date(r.week_end   + "T12:00:00");
+
+  const expenseList = (expenses ?? []) as Expense[];
+
+  // Presets globales como base, sobreescritos por las tasas propias del reporte
+  const globalPresets: Record<string, number> = {};
+  for (const p of presets ?? []) globalPresets[p.currency] = Number(p.rate);
+  const reportRates = (r.exchange_rates ?? {}) as Record<string, number>;
+  const effectiveRates: Record<string, number> = { ...globalPresets, ...reportRates };
+
+  const budgetMax      = r.budget_max ? Number(r.budget_max) : null;
+  const hasRates       = Object.keys(effectiveRates).length > 0;
+  const totalCalculado = expenseList.reduce((acc, e) => acc + Number(e.amount ?? 0), 0);
+  const totalUSD       = totalInUSD(expenseList.map((e) => ({ amount: Number(e.amount), currency: e.currency ?? "UYU" })), effectiveRates);
+  const budgetOverrun  = !!(budgetMax && totalUSD !== null && totalUSD > budgetMax);
+
+  return (
+    <div className="space-y-4">
+      {/* Encabezado */}
+      <div>
+        <Link href="/dashboard/reports" className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-primary)]">
+          ← Rendiciones
+        </Link>
+        <h1 className="page-title mt-1">
+          {r.title ?? (
+            <>
+              {startDate.toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
+              {" – "}
+              {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
+            </>
+          )}
+        </h1>
+        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+          {startDate.toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
+          {" – "}
+          {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
+        </p>
+        {r.notes && <p className="page-subtitle italic">{r.notes}</p>}
+      </div>
+
+      {/* Acciones */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.7rem] font-semibold ${
+          isOpen ? "bg-emerald-100 text-emerald-700" : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+        }`}>
+          {isOpen ? "Abierta" : "Cerrada"}
+        </span>
+        <CloseReportButton reportId={r.id} currentStatus={r.status} />
+        <a
+          href={`/api/reports/export?report_id=${r.id}`}
+          className="rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
+        >
+          Exportar Excel
+        </a>
+        {isOpen && (
+          <Link href={`/dashboard/expenses/new?reportId=${r.id}`} className="btn-primary text-sm ml-auto">
+            + Agregar gasto
+          </Link>
+        )}
+      </div>
+
+      {/* Stats + presupuesto en tiempo real */}
+      <RealtimeBudgetSection
+        reportId={r.id}
+        budgetMax={budgetMax}
+        savedRates={effectiveRates}
+        initialExpenses={expenseList.map((e) => ({
+          id:       e.id,
+          amount:   Number(e.amount ?? 0),
+          currency: e.currency ?? "UYU",
+          status:   e.status ?? "pending",
+        }))}
+      />
+
+      {/* Lista de gastos */}
+      <div className="card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#f0ecf4] px-4 py-3">
+          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Gastos</h2>
+          {isOpen && (
+            <Link href={`/dashboard/expenses/new?reportId=${r.id}`} className="text-xs font-medium text-[var(--color-primary)]">
+              + Agregar
+            </Link>
+          )}
+        </div>
+
+        {expenses && expenses.length > 0 ? (
+          <>
+            {/* Cards — mobile */}
+            <div className="md:hidden">
+              {expenseList.map((expense) => {
+                const usd = toUSD(Number(expense.amount), expense.currency ?? "UYU", effectiveRates);
+                return (
+                  <div key={expense.id} className="border-b border-[#f0ecf4] last:border-b-0">
+                    <Link
+                      href={`/dashboard/expenses/${expense.id}`}
+                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#faf7fd] active:bg-[#f0ecf4] transition-colors"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+                          {expense.description}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {CATEGORY_LABELS[expense.category] ?? expense.category}
+                          {" · "}
+                          {new Date(expense.expense_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <span className="text-sm font-bold">
+                          {fmt(Number(expense.amount))}{" "}
+                          <span className="text-xs font-normal text-[var(--color-text-muted)]">{expense.currency ?? "UYU"}</span>
+                        </span>
+                        {usd !== null && (expense.currency ?? "UYU") !== "USD" && (
+                          <span className="text-[0.65rem] font-semibold text-emerald-700">≈ USD {fmt(usd)}</span>
+                        )}
+                        <ExpenseStatusBadge status={expense.status ?? "pending"} />
+                      </div>
+                    </Link>
+                    {expense.status === "rejected" && expense.rejection_reason && (
+                      <div className="mx-4 mb-2 rounded-lg bg-red-50 border border-red-100 px-3 py-2">
+                        <p className="text-[0.65rem] font-semibold text-red-600 mb-0.5">Motivo de rechazo</p>
+                        <p className="text-xs text-red-700">{expense.rejection_reason}</p>
+                      </div>
+                    )}
+                    {expense.status === "reviewing" && expense.admin_notes && (
+                      <div className="mx-4 mb-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+                        <p className="text-[0.65rem] font-semibold text-blue-600 mb-0.5">Comentario del admin</p>
+                        <p className="text-xs text-blue-700">{expense.admin_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Tabla — desktop */}
+            <table className="hidden min-w-full text-left text-sm md:table">
+              <thead className="bg-[#f5f1f8] text-xs uppercase text-[var(--color-text-muted)]">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Descripción</th>
+                  <th className="px-4 py-3 font-medium">Categoría</th>
+                  <th className="px-4 py-3 font-medium text-right">Monto original</th>
+                  {hasRates && <th className="px-4 py-3 font-medium text-right">USD</th>}
+                  <th className="px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenseList.map((expense) => {
+                  const usd = toUSD(Number(expense.amount), expense.currency ?? "UYU", effectiveRates);
+                  return (
+                    <tr key={expense.id} className="border-t border-[#f0ecf4] hover:bg-[#faf7fd] transition-colors">
+                      <td className="px-4 py-3 align-top">
+                        <Link href={`/dashboard/expenses/${expense.id}`} className="text-sm font-medium hover:text-[var(--color-primary)]">
+                          {expense.description}
+                        </Link>
+                        <p className="text-[0.7rem] text-[var(--color-text-muted)]">
+                          {new Date(expense.expense_date + "T12:00:00").toLocaleDateString("es-UY")}
+                        </p>
+                        {expense.status === "rejected" && expense.rejection_reason && (
+                          <p className="mt-1 text-[0.68rem] text-red-600 italic">
+                            ✕ {expense.rejection_reason}
+                          </p>
+                        )}
+                        {expense.status === "reviewing" && expense.admin_notes && (
+                          <p className="mt-1 text-[0.68rem] text-blue-600 italic">
+                            ↺ {expense.admin_notes}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
+                        {CATEGORY_LABELS[expense.category] ?? expense.category}
+                      </td>
+                      <td className="px-4 py-3 align-middle text-right text-sm font-semibold whitespace-nowrap">
+                        {fmt(Number(expense.amount))}{" "}
+                        <span className="text-xs font-normal text-[var(--color-text-muted)]">{expense.currency ?? "UYU"}</span>
+                      </td>
+                      {hasRates && (
+                        <td className="px-4 py-3 align-middle text-right text-sm font-semibold whitespace-nowrap text-emerald-700">
+                          {usd !== null ? `USD ${fmt(usd)}` : <span className="text-[var(--color-text-muted)] font-normal italic text-xs">—</span>}
+                        </td>
+                      )}
+                      <td className="px-4 py-3 align-middle">
+                        <ExpenseStatusBadge status={expense.status ?? "pending"} />
+                      </td>
+                      <td className="px-4 py-3 align-middle text-right">
+                        {expense.status === "pending" && (
+                          <Link href={`/dashboard/expenses/${expense.id}/edit`} className="text-xs font-medium text-[var(--color-primary)] hover:underline">
+                            Editar
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-[#e5e2ea] bg-[#fdfbff]">
+                  <td colSpan={2} className="px-4 py-3 text-xs font-semibold uppercase text-[var(--color-text-muted)]">Total</td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-[var(--color-text-muted)]">
+                    —
+                  </td>
+                  {hasRates && (
+                    <td className="px-4 py-3 text-right text-sm font-bold text-[var(--color-primary)]">
+                      {totalUSD !== null ? `USD ${fmt(totalUSD)}` : "—"}
+                    </td>
+                  )}
+                  <td colSpan={2} />
+                </tr>
+              </tfoot>
+            </table>
+
+            {/* Total mobile */}
+            <div className="flex items-center justify-between border-t-2 border-[#e5e2ea] bg-[#fdfbff] px-4 py-3 md:hidden">
+              <span className="text-xs font-semibold uppercase text-[var(--color-text-muted)]">Total</span>
+              <span className={`text-sm font-bold ${budgetOverrun ? "text-red-600" : "text-[var(--color-primary)]"}`}>
+                {totalUSD !== null ? `USD ${fmt(totalUSD)}` : `${fmt(totalCalculado)} (orig.)`}
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="text-3xl">🧾</div>
+            <p className="text-sm text-[var(--color-text-muted)]">Sin gastos aún.</p>
+            {isOpen && (
+              <Link href={`/dashboard/expenses/new?reportId=${r.id}`} className="btn-primary text-sm">
+                Agregar primer gasto
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
