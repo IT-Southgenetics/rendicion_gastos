@@ -128,5 +128,6 @@ export function generateReportWorkbook(args: {
   const workbook  = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Rendicion");
 
-  return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  return new Uint8Array(buf);
 }
