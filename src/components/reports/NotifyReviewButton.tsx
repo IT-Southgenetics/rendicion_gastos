@@ -71,6 +71,27 @@ export function NotifyReviewButton({
     } catch {
       // si falla el check, seguimos igual; la API de N8N seguirá recibiendo datos
     }
+    // Obtener estados de los gastos de esta rendición
+    const { data: expenses, error: expensesError } = await supabase
+      .from('expenses')
+      .select('status')
+      .eq('report_id', reportId);
+
+    if (expensesError) {
+      setLoading(false);
+      toast.error('No se pudieron leer los gastos para la notificación.');
+      return;
+    }
+
+    const statuses = (expenses ?? []).map((e) => e.status ?? 'pending');
+    const total = statuses.length;
+    const approved = statuses.filter((s) => s === 'approved').length;
+    const rejected = statuses.filter((s) => s === 'rejected').length;
+    const reviewing = statuses.filter((s) => s === 'reviewing').length;
+    const pending = statuses.filter((s) => s === 'pending').length;
+
+    const allApproved = total > 0 && approved === total;
+    const hasRejectedOrReviewing = rejected > 0 || reviewing > 0;
 
     const result = await sendReportReviewNotification({
       reportId,
@@ -83,6 +104,15 @@ export function NotifyReviewButton({
         id: supervisorProfile.id,
         full_name: supervisorProfile.full_name,
         email: supervisorProfile.email,
+      },
+      summary: {
+        total,
+        approved,
+        rejected,
+        reviewing,
+        pending,
+        allApproved,
+        hasRejectedOrReviewing,
       },
     });
 
