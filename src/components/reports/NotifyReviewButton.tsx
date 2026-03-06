@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { sendReportReviewNotification } from '@/lib/n8n/sendReportReviewNotification';
+import { toUSD, totalInUSD } from '@/lib/currency';
 
 interface NotifyReviewButtonProps {
   reportId: string;
@@ -71,10 +72,10 @@ export function NotifyReviewButton({
     } catch {
       // si falla el check, seguimos igual; la API de N8N seguirá recibiendo datos
     }
-    // Obtener estados de los gastos de esta rendición
+    // Obtener estados y montos de los gastos de esta rendición
     const { data: expenses, error: expensesError } = await supabase
       .from('expenses')
-      .select('status')
+      .select('status, amount, currency')
       .eq('report_id', reportId);
 
     if (expensesError) {
@@ -92,6 +93,62 @@ export function NotifyReviewButton({
 
     const allApproved = total > 0 && approved === total;
     const hasRejectedOrReviewing = rejected > 0 || reviewing > 0;
+
+    // Calcular totales solo cuando todos están aprobados
+    let totalOriginal: number | null = null;
+    let originalCurrency: string | null = null;
+    let totalUsd: number | null = null;
+    let singleCurrency = false;
+
+    if (allApproved && expenses && expenses.length > 0) {
+      const currencies = new Set<string>();
+      const amountsByCurrency: Record<string, number> = {};
+
+      for (const e of expenses) {
+        const cur = e.currency ?? 'UYU';
+        currencies.add(cur);
+        amountsByCurrency[cur] = (amountsByCurrency[cur] ?? 0) + Number(e.amount ?? 0);
+      }
+
+      singleCurrency = currencies.size === 1;
+
+      // Necesitamos tipos de cambio para convertir a USD cuando haga falta
+      const [{ data: report }, { data: presets }] = await Promise.all([
+        supabase
+          .from('weekly_reports')
+          .select('exchange_rates')
+          .eq('id', reportId)
+          .single(),
+        supabase.from('exchange_rate_presets').select('currency, rate'),
+      ]);
+
+      const globalPresets: Record<string, number> = {};
+      for (const p of presets ?? []) {
+        globalPresets[p.currency] = Number(p.rate);
+      }
+      const reportRates = (report?.exchange_rates ?? {}) as Record<string, number>;
+      const rates: Record<string, number> = { ...globalPresets, ...reportRates };
+
+      if (singleCurrency) {
+        const cur = Array.from(currencies)[0]!;
+        originalCurrency = cur;
+        totalOriginal = amountsByCurrency[cur] ?? 0;
+
+        if (cur === 'USD') {
+          totalUsd = totalOriginal;
+        } else {
+          totalUsd = toUSD(totalOriginal, cur, rates);
+        }
+      } else {
+        totalUsd = totalInUSD(
+          (expenses ?? []).map((e) => ({
+            amount: Number(e.amount ?? 0),
+            currency: e.currency ?? 'UYU',
+          })),
+          rates,
+        );
+      }
+    }
 
     const result = await sendReportReviewNotification({
       reportId,
@@ -113,16 +170,35 @@ export function NotifyReviewButton({
         pending,
         allApproved,
         hasRejectedOrReviewing,
+        totalOriginal,
+        originalCurrency,
+        totalUsd,
+        singleCurrency,
       },
     });
 
-    setLoading(false);
-
     if (!result.success) {
+      setLoading(false);
       toast.error('No se pudo notificar la revisión.');
       return;
     }
 
+    // Si no todos los gastos están aprobados, reabrir automáticamente la rendición
+    if (!allApproved) {
+      const { error: reopenError } = await supabase
+        .from('weekly_reports')
+        .update({ status: 'open', closed_at: null })
+        .eq('id', reportId);
+
+      if (reopenError) {
+        setLoading(false);
+        toast.error('Se envió la notificación pero no se pudo reabrir la rendición.');
+        router.refresh();
+        return;
+      }
+    }
+
+    setLoading(false);
     toast.success('Revisión notificada.');
     router.refresh();
   }

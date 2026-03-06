@@ -22,6 +22,10 @@ interface ReportReviewPayload {
     pending: number;
     allApproved: boolean;
     hasRejectedOrReviewing: boolean;
+    totalOriginal: number | null;
+    originalCurrency: string | null;
+    totalUsd: number | null;
+    singleCurrency: boolean;
   };
 }
 
@@ -52,6 +56,10 @@ export async function sendReportReviewNotification(payload: ReportReviewPayload)
       pendientes: payload.summary.pending,
       todos_aprobados: payload.summary.allApproved,
       hay_rechazados_o_revision: payload.summary.hasRejectedOrReviewing,
+      total_original: payload.summary.totalOriginal,
+      moneda_original: payload.summary.originalCurrency,
+      total_usd: payload.summary.totalUsd,
+      solo_usd: !payload.summary.singleCurrency,
     },
   };
 
