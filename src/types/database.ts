@@ -303,6 +303,45 @@ export type Database = {
         }
         Relationships: []
       }
+      viewer_assignments: {
+        Row: {
+          id: string
+          viewer_id: string
+          employee_id: string
+          assigned_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          viewer_id: string
+          employee_id: string
+          assigned_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          viewer_id?: string
+          employee_id?: string
+          assigned_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viewer_assignments_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viewer_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_reports: {
         Row: {
           budget_max: number | null
@@ -388,7 +427,7 @@ export type Database = {
         | "other"
       expense_status: "pending" | "approved" | "rejected" | "reviewing"
       report_status: "open" | "closed"
-      user_role: "admin" | "employee" | "seller" | "supervisor"
+      user_role: "admin" | "employee" | "seller" | "supervisor" | "chusmas"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -528,7 +567,7 @@ export const Constants = {
       ],
       expense_status: ["pending", "approved", "rejected", "reviewing"],
       report_status: ["open", "closed"],
-      user_role: ["admin", "employee", "seller", "supervisor"],
+      user_role: ["admin", "employee", "supervisor", "chusmas"],
     },
   },
 } as const

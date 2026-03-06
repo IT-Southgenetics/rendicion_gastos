@@ -1,13 +1,18 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UserRoleEditor } from "@/components/admin/UserRoleEditor";
 import { SupervisionAssigner } from "@/components/admin/SupervisionAssigner";
+import { ViewerAssigner } from "@/components/admin/ViewerAssigner";
 import { DeleteUserButton } from "@/components/admin/DeleteUserButton";
+import { CountryFilter } from "@/components/admin/CountryFilter";
 
+// Incluye "seller" solo para mostrar usuarios existentes con ese rol (rol retirado)
 const ROLE_LABELS: Record<string, string> = {
   employee:   "Empleado",
   seller:     "Vendedor",
   supervisor: "Supervisor",
+  chusmas:    "Chusmas (solo lectura)",
   admin:      "Administrador",
 };
 
@@ -15,11 +20,21 @@ const ROLE_COLORS: Record<string, string> = {
   employee:   "bg-blue-100 text-blue-700",
   seller:     "bg-amber-100 text-amber-700",
   supervisor: "bg-purple-100 text-purple-700",
+  chusmas:    "bg-gray-100 text-gray-700",
   admin:      "bg-red-100 text-red-700",
 };
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ country?: string }>;
+}) {
   const supabase = await createSupabaseServerClient();
+  const params = await searchParams;
+  const countryFilter = params.country
+    ? params.country.split(",").map((s) => s.trim()).filter(Boolean)
+    : null;
+
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
@@ -27,18 +42,29 @@ export default async function AdminUsersPage() {
     .from("profiles").select("role").eq("id", session.user.id).single();
   if (me?.role !== "admin") redirect("/dashboard");
 
-  // Fetch all users
-  const { data: users } = await supabase
+  // Fetch all users (incl. country)
+  const { data: rawUsers } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, department, is_active, created_at")
+    .select("id, full_name, email, role, department, is_active, created_at, country")
     .order("full_name", { ascending: true });
+
+  const users = (rawUsers ?? []).filter((u) => {
+    if (!countryFilter?.length) return true;
+    const c = (u as { country?: string }).country ?? "";
+    return c && countryFilter.includes(c);
+  });
 
   // Fetch all supervision assignments (with employee info)
   const { data: allAssignments } = await supabase
     .from("supervision_assignments")
     .select("id, supervisor_id, employee_id, profiles!supervision_assignments_employee_id_fkey(id, full_name, email, role)");
 
-  const userList = users ?? [];
+  // Fetch all viewer assignments (with employee info)
+  const { data: allViewerAssignments } = await supabase
+    .from("viewer_assignments")
+    .select("id, viewer_id, employee_id, profiles!viewer_assignments_employee_id_fkey(id, full_name, email, role)");
+
+  const userList = users;
 
   // Group assignments by supervisor
   const assignmentsBySupervisor: Record<string, Array<{
@@ -61,12 +87,27 @@ export default async function AdminUsersPage() {
     if (sup) supervisorsByEmployee[a.employee_id].push(sup.full_name);
   }
 
+  // Group assignments by viewer (chusmas)
+  const assignmentsByViewer: Record<string, Array<{
+    id: string;
+    employee_id: string;
+    employee: { id: string; full_name: string; email: string; role: string };
+  }>> = {};
+
+  for (const a of allViewerAssignments ?? []) {
+    const emp = a.profiles as { id: string; full_name: string; email: string; role: string } | null;
+    if (!emp) continue;
+    if (!assignmentsByViewer[a.viewer_id]) assignmentsByViewer[a.viewer_id] = [];
+    assignmentsByViewer[a.viewer_id].push({ id: a.id, employee_id: a.employee_id, employee: emp });
+  }
+
   // Available users for supervision assignment (non-admin)
   const availableForSupervision = userList
     .filter((u) => u.role !== "admin")
     .map((u) => ({ id: u.id, full_name: u.full_name, email: u.email, role: u.role }));
 
   const supervisors = userList.filter((u) => u.role === "supervisor");
+  const viewers     = userList.filter((u) => u.role === "chusmas");
 
   return (
     <div className="space-y-6">
@@ -74,6 +115,10 @@ export default async function AdminUsersPage() {
         <h1 className="page-title">Gestión de usuarios</h1>
         <p className="page-subtitle">Administrá roles y asignaciones de supervisión.</p>
       </div>
+
+      <Suspense fallback={null}>
+        <CountryFilter basePath="/dashboard/admin/users" />
+      </Suspense>
 
       {/* Tabla de usuarios */}
       <div className="card overflow-hidden">
@@ -90,6 +135,7 @@ export default async function AdminUsersPage() {
               <tr>
                 <th className="px-4 py-3 font-medium">Usuario</th>
                 <th className="px-4 py-3 font-medium">Rol</th>
+                <th className="px-4 py-3 font-medium hidden lg:table-cell">País</th>
                 <th className="px-4 py-3 font-medium">Departamento</th>
                 <th className="px-4 py-3 font-medium">Supervisado por</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
@@ -120,6 +166,9 @@ export default async function AdminUsersPage() {
                           currentUserId={session.user.id}
                         />
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[var(--color-text-muted)] hidden lg:table-cell">
+                      {(user as { country?: string }).country ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
                       {user.department ?? "—"}
@@ -180,6 +229,11 @@ export default async function AdminUsersPage() {
                     />
                   </div>
                 </div>
+                {(user as { country?: string }).country && (
+                  <p className="text-[0.65rem] text-[var(--color-text-muted)]">
+                    País: {(user as { country?: string }).country}
+                  </p>
+                )}
                 {supervisorNames.length > 0 && (
                   <p className="text-[0.65rem] text-[var(--color-text-muted)]">
                     Supervisado por: {supervisorNames.join(", ")}
@@ -232,6 +286,56 @@ export default async function AdminUsersPage() {
                       supervisorName={sup.full_name}
                       initialAssignments={myAssignments}
                       availableEmployees={others}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Sección de chusmas (solo lectura) */}
+      {viewers.length > 0 && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Asignaciones de chusmas</h2>
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+              Usuarios con rol <strong>Chusmas</strong> pueden ver las rendiciones de los empleados asignados, sin poder editarlas.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {viewers.map((viewer) => {
+              const myAssignments = assignmentsByViewer[viewer.id] ?? [];
+              const others = userList.filter((u) => u.id !== viewer.id);
+              const available = others.map((u) => ({
+                id: u.id,
+                full_name: u.full_name,
+                email: u.email,
+                role: u.role,
+              }));
+
+              return (
+                <div key={viewer.id} className="card p-4 space-y-3 border-l-4 border-gray-300">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-700">
+                      {viewer.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-[var(--color-text-primary)]">{viewer.full_name}</p>
+                      <p className="text-[0.65rem] text-[var(--color-text-muted)]">{viewer.email}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[0.65rem] font-semibold uppercase text-[var(--color-text-muted)] mb-2">
+                      Puede ver rendiciones de:
+                    </p>
+                    <ViewerAssigner
+                      viewerId={viewer.id}
+                      viewerName={viewer.full_name}
+                      initialAssignments={myAssignments}
+                      availableEmployees={available}
                     />
                   </div>
                 </div>

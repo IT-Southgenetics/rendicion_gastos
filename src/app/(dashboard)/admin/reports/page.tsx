@@ -1,9 +1,19 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { CountryFilter } from "@/components/admin/CountryFilter";
 
-export default async function AdminReportsPage() {
+export default async function AdminReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ country?: string }>;
+}) {
   const supabase = await createSupabaseServerClient();
+  const params = await searchParams;
+  const countryFilter = params.country
+    ? params.country.split(",").map((s) => s.trim()).filter(Boolean)
+    : null;
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
@@ -17,25 +27,32 @@ export default async function AdminReportsPage() {
 
   if (profile?.role !== "admin") redirect("/dashboard");
 
-  // Traer todas las rendiciones con datos del usuario y conteo de gastos
-  const { data: reports } = await supabase
+  // Traer todas las rendiciones con datos del usuario (incl. país) y conteo de gastos
+  const { data: rawReports } = await supabase
     .from("weekly_reports")
     .select(`
       *,
-      profiles!weekly_reports_user_id_fkey(full_name, email),
+      profiles!weekly_reports_user_id_fkey(full_name, email, country),
       expenses(count)
     `)
     .order("created_at", { ascending: false });
 
-  const pendingCount = (reports ?? []).filter((r) => r.status === "open").length;
+  const reports = (rawReports ?? []).filter((r) => {
+    if (!countryFilter?.length) return true;
+    const user = r.profiles as { full_name?: string; email?: string; country?: string } | null;
+    const country = user?.country ?? "";
+    return country && countryFilter.includes(country);
+  });
+
+  const pendingCount = reports.filter((r) => r.status === "open").length;
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Rendiciones — Admin</h1>
           <p className="page-subtitle">
-            {(reports ?? []).length} rendiciones · {pendingCount} abiertas
+            {reports.length} rendiciones · {pendingCount} abiertas
           </p>
         </div>
         <Link
@@ -46,12 +63,16 @@ export default async function AdminReportsPage() {
         </Link>
       </div>
 
-      {/* Filtros de estado */}
+      <Suspense fallback={null}>
+        <CountryFilter basePath="/dashboard/admin/reports" />
+      </Suspense>
+
       <div className="card overflow-hidden">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-[#f5f1f8] text-xs uppercase text-[var(--color-text-muted)]">
             <tr>
               <th className="px-4 py-3 font-medium">Empleado</th>
+              <th className="px-4 py-3 font-medium hidden lg:table-cell">País</th>
               <th className="px-4 py-3 font-medium hidden md:table-cell">Período</th>
               <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">Total</th>
               <th className="px-4 py-3 font-medium hidden sm:table-cell">Gastos</th>
@@ -62,7 +83,7 @@ export default async function AdminReportsPage() {
           <tbody>
             {reports && reports.length > 0 ? (
               reports.map((r) => {
-                const user = r.profiles as { full_name: string; email: string } | null;
+                const user = r.profiles as { full_name: string; email: string; country?: string } | null;
                 const expenseCount = (r.expenses as { count: number }[])?.[0]?.count ?? 0;
                 const isOpen = r.status === "open";
                 return (
@@ -80,6 +101,9 @@ export default async function AdminReportsPage() {
                           {r.title}
                         </p>
                       )}
+                    </td>
+                    <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] hidden lg:table-cell">
+                      {user?.country ?? "—"}
                     </td>
                     <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] hidden md:table-cell whitespace-nowrap">
                       {new Date(r.week_start + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
@@ -118,7 +142,7 @@ export default async function AdminReportsPage() {
               })
             ) : (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
+                <td colSpan={7} className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
                   No hay rendiciones aún.
                 </td>
               </tr>

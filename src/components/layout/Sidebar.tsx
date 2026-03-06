@@ -5,21 +5,23 @@ import { LayoutDashboard, Receipt, FileSpreadsheet, Users, Eye, LogOut } from "l
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const baseNavItems = [
-  { href: "/dashboard",            label: "Resumen",     icon: LayoutDashboard, adminOnly: false, supervisorOnly: false },
-  { href: "/dashboard/reports",    label: "Rendiciones", icon: FileSpreadsheet, adminOnly: false, supervisorOnly: false },
-  { href: "/dashboard/expenses",   label: "Histórico",   icon: Receipt,         adminOnly: false, supervisorOnly: false },
-  { href: "/dashboard/supervisor", label: "Supervisar",  icon: Eye,             adminOnly: false, supervisorOnly: true  },
-  { href: "/dashboard/admin",      label: "Admin",       icon: Users,           adminOnly: true,  supervisorOnly: false },
+  { href: "/dashboard",            label: "Resumen",     icon: LayoutDashboard, adminOnly: false, supervisorOnly: false, viewerOnly: false },
+  { href: "/dashboard/reports",    label: "Rendiciones", icon: FileSpreadsheet, adminOnly: false, supervisorOnly: false, viewerOnly: false },
+  { href: "/dashboard/expenses",   label: "Histórico",   icon: Receipt,         adminOnly: false, supervisorOnly: false, viewerOnly: false },
+  { href: "/dashboard/supervisor", label: "Supervisar",  icon: Eye,             adminOnly: false, supervisorOnly: true,  viewerOnly: false },
+  { href: "/dashboard/viewer",     label: "Ver rend.",   icon: Eye,             adminOnly: false, supervisorOnly: false, viewerOnly: true  },
+  { href: "/dashboard/admin",      label: "Admin",       icon: Users,           adminOnly: true,  supervisorOnly: false, viewerOnly: false },
 ];
 
-export function Sidebar({ isAdmin = false, isSupervisor = false }: { isAdmin?: boolean; isSupervisor?: boolean }) {
+export function Sidebar({ isAdmin = false, isSupervisor = false, isViewer = false }: { isAdmin?: boolean; isSupervisor?: boolean; isViewer?: boolean }) {
   const pathname = usePathname();
   const router   = useRouter();
   const supabase = createSupabaseBrowserClient();
 
   const navItems = baseNavItems.filter((item) => {
-    if (item.adminOnly)     return isAdmin;
-    if (item.supervisorOnly) return isSupervisor;
+    if (item.adminOnly)       return isAdmin;
+    if (item.supervisorOnly)  return isSupervisor;
+    if (item.viewerOnly)      return isViewer;
     return true;
   });
 

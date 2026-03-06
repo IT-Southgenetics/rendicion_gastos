@@ -3,21 +3,26 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type UserRole = "employee" | "seller" | "supervisor" | "admin";
+// Rol "seller" ya no se asigna; se mantiene solo para mostrar usuarios existentes
+type UserRole = "employee" | "seller" | "supervisor" | "chusmas" | "admin";
 
-const ROLE_LABELS: Record<UserRole, string> = {
+const ROLE_LABELS: Record<string, string> = {
   employee:   "Empleado",
   seller:     "Vendedor",
   supervisor: "Supervisor",
+  chusmas:    "Chusmas (solo lectura)",
   admin:      "Administrador",
 };
 
-const ROLE_COLORS: Record<UserRole, string> = {
+const ROLE_COLORS: Record<string, string> = {
   employee:   "bg-blue-100 text-blue-700",
   seller:     "bg-amber-100 text-amber-700",
   supervisor: "bg-purple-100 text-purple-700",
+  chusmas:    "bg-gray-100 text-gray-700",
   admin:      "bg-red-100 text-red-700",
 };
+
+const SELECTABLE_ROLES: UserRole[] = ["employee", "supervisor", "chusmas", "admin"];
 
 interface Props {
   userId:      string;
@@ -68,7 +73,7 @@ export function UserRoleEditor({ userId, currentRole, currentUserId }: Props) {
   return (
     <div className="relative inline-block">
       <div className="absolute left-0 top-full z-20 mt-1 w-44 rounded-xl border border-[#e5e2ea] bg-white shadow-lg py-1">
-        {(["employee", "seller", "supervisor", "admin"] as UserRole[]).map((r) => (
+        {SELECTABLE_ROLES.map((r) => (
           <button
             key={r}
             disabled={saving}

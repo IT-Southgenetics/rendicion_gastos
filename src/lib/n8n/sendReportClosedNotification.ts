@@ -14,6 +14,11 @@ interface ReportClosedPayload {
   reportId: string;
   employee: UserInfo;
   supervisors: UserInfo[];
+  excel?: {
+    filename: string;
+    contentType: string;
+    base64: string;
+  } | null;
 }
 
 export async function sendReportClosedNotification(payload: ReportClosedPayload) {
@@ -35,6 +40,7 @@ export async function sendReportClosedNotification(payload: ReportClosedPayload)
       nombre: s.full_name,
       email: s.email,
     })),
+    excel: payload.excel ?? null,
   };
 
   try {
