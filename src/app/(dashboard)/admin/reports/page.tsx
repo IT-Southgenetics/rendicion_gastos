@@ -88,9 +88,10 @@ export default async function AdminReportsPage() {
                     </td>
                     <td className="px-4 py-3 align-middle text-right text-sm font-semibold hidden sm:table-cell whitespace-nowrap">
                       {Number(r.total_amount ?? 0).toLocaleString("es-UY", {
-                        minimumFractionDigits: 2, maximumFractionDigits: 2,
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                       })}{" "}
-                      <span className="text-xs font-normal text-[var(--color-text-muted)]">UYU</span>
+                      <span className="text-xs font-normal text-[var(--color-text-muted)]">USD</span>
                     </td>
                     <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] hidden sm:table-cell">
                       {expenseCount} {expenseCount === 1 ? "gasto" : "gastos"}
@@ -107,7 +108,7 @@ export default async function AdminReportsPage() {
                     <td className="px-4 py-3 align-middle text-right">
                       <Link
                         href={`/dashboard/admin/reports/${r.id}`}
-                        className="rounded-full border border-[#e5e2ea] px-3 py-1 text-[0.7rem] font-medium text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
+                        className="inline-flex w-full items-center justify-center rounded-full border border-[#e5e2ea] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[#f5f1f8] sm:w-auto sm:text-[0.7rem]"
                       >
                         Revisar →
                       </Link>
