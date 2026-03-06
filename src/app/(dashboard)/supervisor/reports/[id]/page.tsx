@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import { ExpenseAdminActions } from "@/components/expenses/ExpenseAdminActions";
 import { CloseReportButton } from "@/components/reports/CloseReportButton";
+import { NotifyReviewButton } from "@/components/reports/NotifyReviewButton";
 import { toUSD, totalInUSD, fmt } from "@/lib/currency";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -128,14 +129,22 @@ export default async function SupervisorReportDetailPage({ params }: Props) {
             {budgetOverrun && " ⚠ Excedido"}
           </span>
         )}
-        {report.status === "open" && (
-          <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {report.status === "open" && (
             <CloseReportButton
               reportId={report.id}
               currentStatus={report.status as "open" | "closed"}
             />
-          </div>
-        )}
+          )}
+          {report.status === "closed" && owner && (
+            <NotifyReviewButton
+              reportId={report.id}
+              employeeId={report.user_id}
+              employeeName={owner.full_name}
+              employeeEmail={owner.email}
+            />
+          )}
+        </div>
       </div>
 
       {/* Stats */}

@@ -5,6 +5,8 @@ import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import { ExpenseAdminActions } from "@/components/expenses/ExpenseAdminActions";
 import { ExchangeRateEditor } from "@/components/reports/ExchangeRateEditor";
 import { CurrencyBreakdown } from "@/components/reports/CurrencyBreakdown";
+import { CloseReportButton } from "@/components/reports/CloseReportButton";
+import { NotifyReviewButton } from "@/components/reports/NotifyReviewButton";
 import { DeleteExpenseButton } from "@/components/admin/DeleteExpenseButton";
 import { DeleteReportButton } from "@/components/admin/DeleteReportButton";
 import { toUSD, totalInUSD, fmt } from "@/lib/currency";
@@ -117,9 +119,13 @@ export default async function AdminReportDetailPage({ params }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap shrink-0">
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.7rem] font-semibold ${
-            isOpen ? "bg-emerald-100 text-emerald-700" : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-          }`}>
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.7rem] font-semibold ${
+              isOpen
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+            }`}
+          >
             {isOpen ? "Abierta" : "Cerrada"}
           </span>
           <a
@@ -128,6 +134,20 @@ export default async function AdminReportDetailPage({ params }: Props) {
           >
             Exportar Excel
           </a>
+          {isOpen && (
+            <CloseReportButton
+              reportId={report.id}
+              currentStatus={report.status as "open" | "closed"}
+            />
+          )}
+          {!isOpen && user && (
+            <NotifyReviewButton
+              reportId={report.id}
+              employeeId={report.user_id}
+              employeeName={user.full_name}
+              employeeEmail={user.email}
+            />
+          )}
           <DeleteReportButton
             reportId={report.id}
             reportTitle={report.title ?? `${report.week_start} – ${report.week_end}`}
