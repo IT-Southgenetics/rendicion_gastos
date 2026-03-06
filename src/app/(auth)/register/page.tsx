@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [country, setCountry] = useState("Uruguay");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -23,6 +24,7 @@ export default function RegisterPage() {
       options: {
         data: {
           full_name: fullName,
+          country,
         },
       },
     });
@@ -84,6 +86,25 @@ export default function RegisterPage() {
               required
               minLength={6}
             />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--color-text-primary)]">
+              País
+            </label>
+            <select
+              className="input"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              required
+            >
+              <option value="Uruguay">Uruguay</option>
+              <option value="Argentina">Argentina</option>
+              <option value="Chile">Chile</option>
+              <option value="Colombia">Colombia</option>
+              <option value="México">México</option>
+              <option value="Venezuela">Venezuela</option>
+              <option value="Regional">Regional (otro)</option>
+            </select>
           </div>
           <button
             type="submit"
