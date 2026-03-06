@@ -42,8 +42,8 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
   }, [uploaded]);
 
   async function uploadFile(file: File) {
-    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
-      toast.error(`"${file.name}": solo se permiten imágenes o PDF.`);
+    if (!file.type.startsWith("image/")) {
+      toast.error(`"${file.name}": solo se permiten fotos (imágenes).`);
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -193,10 +193,10 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
       >
         <div>
           <p className="text-sm font-medium text-[var(--color-text-primary)]">
-            {hasFiles ? "Agregar más archivos" : "Arrastrá archivos aquí"}
+            {hasFiles ? "Agregar más fotos de comprobantes" : "Arrastrá fotos de comprobantes aquí"}
           </p>
           <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-            JPG, PNG, WEBP o PDF — máx. 10 MB por archivo
+            Solo fotos (JPG, PNG, WEBP) · máx. 10 MB por foto
           </p>
         </div>
 
@@ -208,7 +208,7 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
           <input
             ref={inputRef}
             type="file"
-            accept="image/*,application/pdf"
+            accept="image/*"
             multiple
             capture="environment"
             className="hidden"
