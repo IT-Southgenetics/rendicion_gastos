@@ -206,6 +206,12 @@ export default async function SupervisorReportDetailPage({ params }: Props) {
                         </span>
                         <ExpenseStatusBadge status={expense.status ?? "pending"} />
                       </div>
+                      <Link
+                        href={`/dashboard/expenses/${expense.id}`}
+                        className="inline-block text-[0.65rem] font-medium text-[var(--color-primary)] underline underline-offset-2"
+                      >
+                        Ver detalle del gasto (imagen y más)
+                      </Link>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--color-text-muted)]">
                         {expense.expense_date && (
                           <span>{new Date(expense.expense_date + "T12:00:00").toLocaleDateString("es-UY")}</span>
