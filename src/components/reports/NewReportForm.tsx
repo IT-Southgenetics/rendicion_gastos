@@ -79,6 +79,17 @@ export function NewReportForm() {
     setSaving(false);
 
     if (error || !report) {
+      // Caso especial: ya existe una rendición para ese usuario y fecha de inicio
+      if (
+        error?.code === "23505" &&
+        error.message?.includes("weekly_reports_user_id_week_start_key")
+      ) {
+        toast.error(
+          "Ya tenés una rendición que comienza en esa fecha. Elegí otra fecha de inicio o usá la rendición existente."
+        );
+        return;
+      }
+
       const msg = error?.message ?? error?.code ?? "Error desconocido";
       console.error("weekly_reports INSERT:", msg, error);
       toast.error(`No se pudo crear la rendición: ${msg}`);

@@ -32,6 +32,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["expense_status"] | null
+          supervisor_comment: string | null
           ticket_storage_path: string | null
           ticket_url: string | null
           ticket_urls: string[] | null
@@ -55,6 +56,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["expense_status"] | null
+          supervisor_comment?: string | null
           ticket_storage_path?: string | null
           ticket_url?: string | null
           ticket_urls?: string[] | null
@@ -78,6 +80,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["expense_status"] | null
+          supervisor_comment?: string | null
           ticket_storage_path?: string | null
           ticket_url?: string | null
           ticket_urls?: string[] | null

@@ -112,7 +112,7 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
       return;
     }
 
-    // ── Enviar webhook a N8N ──────────────────────────────────────────────────
+    // ── Enviar webhook a N8N (procesamiento OCR) ─────────────────────────────
     setSubmitState("sending");
 
     const webhookResult = await sendExpenseWebhook({
@@ -131,6 +131,18 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
       toast("Gasto guardado. El comprobante se procesará manualmente.", { icon: "⚠️" });
     } else {
       toast.success("¡Gasto cargado correctamente!");
+    }
+
+    // ── Notificar a supervisores del empleado (webhook nuevo gasto) ─────────
+    try {
+      await fetch("/api/nuevo-gasto-supervisor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expenseId: expense.id }),
+      });
+    } catch (error) {
+      console.error("Error enviando webhook de nuevo gasto a supervisor:", error);
+      // No hacemos throw para no bloquear la UI; el gasto ya se guardó
     }
 
     setSubmitState("success");
