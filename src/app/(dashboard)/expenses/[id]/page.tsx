@@ -51,7 +51,9 @@ export default async function ExpenseDetailPage({ params, searchParams }: Expens
   if (!expense) notFound();
 
   const e = expense as Expense;
-  const canEditOwn = e.status === "pending" && e.user_id === session.user.id;
+  const canEditOwn =
+    e.user_id === session.user.id &&
+    (e.status === "pending" || e.status === "reviewing");
   const isSupervisor = me?.role === "supervisor" || me?.role === "admin";
 
   return (

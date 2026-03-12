@@ -228,8 +228,11 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                         <ExpenseStatusBadge status={expense.status ?? "pending"} />
                       </td>
                       <td className="px-4 py-3 align-middle text-right">
-                        {expense.status === "pending" && (
-                          <Link href={`/dashboard/expenses/${expense.id}/edit`} className="text-xs font-medium text-[var(--color-primary)] hover:underline">
+                        {(expense.status === "pending" || expense.status === "reviewing") && (
+                          <Link
+                            href={`/dashboard/expenses/${expense.id}/edit`}
+                            className="text-xs font-medium text-[var(--color-primary)] hover:underline"
+                          >
                             Editar
                           </Link>
                         )}
