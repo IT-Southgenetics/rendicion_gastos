@@ -51,10 +51,11 @@ export default async function ExpenseDetailPage({ params, searchParams }: Expens
   if (!expense) notFound();
 
   const e = expense as Expense;
+  const isOwner = e.user_id === session.user.id;
   const canEditOwn =
-    e.user_id === session.user.id &&
-    (e.status === "pending" || e.status === "reviewing");
-  const isSupervisor = me?.role === "supervisor" || me?.role === "admin";
+    isOwner && (e.status === "pending" || e.status === "reviewing");
+  const canShowSupervisorActions =
+    !isOwner && (me?.role === "supervisor" || me?.role === "admin");
 
   return (
     <div className="space-y-5 max-w-2xl">
@@ -69,15 +70,26 @@ export default async function ExpenseDetailPage({ params, searchParams }: Expens
           {canEditOwn && (
             <Link
               href={`/dashboard/expenses/${e.id}/edit`}
-              className="btn-primary text-sm"
+              className={`text-xs font-semibold inline-flex items-center rounded-full px-3 py-1.5 transition-colors ${
+                e.status === "reviewing"
+                  ? "bg-amber-500 text-white hover:bg-amber-600"
+                  : "btn-primary text-sm"
+              }`}
             >
-              Editar
+              {e.status === "reviewing" ? "Corregir y reenviar" : "Editar"}
             </Link>
           )}
         </div>
       </div>
 
-      {isSupervisor && (
+      {isOwner && e.status === "reviewing" && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+          Este gasto fue marcado para revisión por tu supervisor. Revisá los datos,
+          corregí lo necesario y usá <span className="font-semibold">“Corregir y reenviar”</span> para que vuelva a aprobarlo.
+        </div>
+      )}
+
+      {canShowSupervisorActions && (
         <SupervisorExpenseActions
           expenseId={e.id}
           currentStatus={(e.status ?? "pending") as "pending" | "approved" | "rejected" | "reviewing"}
@@ -89,6 +101,9 @@ export default async function ExpenseDetailPage({ params, searchParams }: Expens
         {/* Datos del gasto */}
         <div className="card p-5 space-y-3 text-sm">
           <Row label="Descripción" value={e.description} />
+          {e.merchant_name && (
+            <Row label="Comercio / Empresa" value={e.merchant_name} />
+          )}
           <Row
             label="Monto"
             value={`${Number(e.amount).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${e.currency ?? "UYU"}`}

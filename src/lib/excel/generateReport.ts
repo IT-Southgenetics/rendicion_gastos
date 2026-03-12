@@ -4,6 +4,7 @@ interface ExpenseRow {
   expense_date: string;
   category: string;
   description: string;
+  merchant_name?: string | null;
   amount: number;
   currency: string | null;
   status: string | null;
@@ -68,7 +69,7 @@ export function generateReportWorkbook(args: {
   rows.push([]);
 
   // ── Cabecera de columnas ──────────────────────────────────
-  const headers = ["Fecha", "Categoría", "Descripción", "Monto", "Moneda"];
+  const headers = ["Fecha", "Categoría", "Descripción", "Comercio / Empresa", "Monto", "Moneda"];
   if (hasRates) headers.push("Equiv. USD");
   headers.push("Estado", "Motivo rechazo", "Comprobante");
   rows.push(headers);
@@ -92,6 +93,7 @@ export function generateReportWorkbook(args: {
       e.expense_date ? new Date(e.expense_date + "T12:00:00").toLocaleDateString("es-UY") : "",
       CATEGORY_LABELS[e.category] ?? e.category,
       e.description,
+      e.merchant_name ?? "",
       amount,
       currency,
     ];
@@ -109,7 +111,7 @@ export function generateReportWorkbook(args: {
 
   // Total por moneda original
   for (const [currency, total] of Object.entries(totalsByCurrency)) {
-    const row: any[] = ["", "", `TOTAL ${currency}`, Number(total.toFixed(2)), currency];
+    const row: any[] = ["", "", "", `TOTAL ${currency}`, Number(total.toFixed(2)), currency];
     if (hasRates) row.push("");
     row.push("", "", "");
     rows.push(row);
@@ -117,7 +119,7 @@ export function generateReportWorkbook(args: {
 
   // Total en USD (si hay tipo de cambio para todas las monedas)
   if (hasRates && allConvertible && expenses.length > 0) {
-    const row: any[] = ["", "", "TOTAL USD", "", ""];
+    const row: any[] = ["", "", "", "TOTAL USD", "", ""];
     row.push(Number(totalUSD.toFixed(2)));
     row.push("", "", "");
     rows.push(row);

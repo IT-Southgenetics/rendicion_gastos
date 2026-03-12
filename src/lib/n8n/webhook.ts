@@ -4,6 +4,8 @@ export interface N8nExtractedData {
   date?: string;
   category?: string;
   merchant?: string;
+  merchant_name?: string;
+  vendor_name?: string;
   raw_text?: string;
 }
 

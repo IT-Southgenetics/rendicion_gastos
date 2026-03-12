@@ -38,6 +38,7 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
 
   const [categoria, setCategoria]     = useState(expense.category ?? "other");
   const [descripcion, setDescripcion] = useState(expense.description ?? "");
+  const [merchant, setMerchant]       = useState(expense.merchant_name ?? "");
   const [moneda, setMoneda]           = useState(expense.currency ?? "UYU");
   const [monto, setMonto]             = useState(String(expense.amount ?? "0"));
   const [fecha, setFecha]             = useState(expense.expense_date ?? "");
@@ -77,9 +78,32 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
 
     setSaving(true);
 
+    // Seguridad extra: verificar estado actual en DB antes de actualizar
+    const { data: latest, error: latestError } = await supabase
+      .from("expenses")
+      .select("status")
+      .eq("id", expense.id)
+      .single();
+
+    if (latestError) {
+      console.error("No se pudo leer el estado actual del gasto:", latestError);
+      toast.error("No se pudo verificar el estado del gasto.");
+      setSaving(false);
+      return;
+    }
+
+    if (latest?.status === "pending" || latest?.status === "approved") {
+      toast.error(
+        "No podés editar un gasto que ya está pendiente de aprobación o aprobado.",
+      );
+      setSaving(false);
+      return;
+    }
+
     const updates: Partial<Expense> = {
       category:    categoria as Expense["category"],
       description: descripcion.trim(),
+      merchant_name: merchant.trim() || null,
       currency:    moneda,
       amount:      parseFloat(monto) as unknown as Expense["amount"],
       expense_date: fecha,
@@ -280,6 +304,22 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
             disabled={isLocked}
           />
         </div>
+      </div>
+
+      {/* Comercio / Empresa */}
+      <div className="space-y-1.5 md:col-span-2">
+        <label className="text-sm font-medium text-[var(--color-text-primary)]">
+          Comercio / Empresa{" "}
+          <span className="font-normal text-[var(--color-text-muted)]">(opcional)</span>
+        </label>
+        <input
+          type="text"
+          className="input"
+          value={merchant}
+          onChange={(e) => setMerchant(e.target.value)}
+          maxLength={120}
+          disabled={isLocked}
+        />
       </div>
 
       {isReviewing && !isLocked && (

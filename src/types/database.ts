@@ -27,6 +27,7 @@ export type Database = {
           n8n_processed: boolean | null
           n8n_raw_data: Json | null
           ocr_extracted_text: string | null
+          merchant_name: string | null
           rejection_reason: string | null
           report_id: string
           reviewed_at: string | null
@@ -52,6 +53,7 @@ export type Database = {
           n8n_processed?: boolean | null
           n8n_raw_data?: Json | null
           ocr_extracted_text?: string | null
+          merchant_name?: string | null
           rejection_reason?: string | null
           report_id: string
           reviewed_at?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           n8n_processed?: boolean | null
           n8n_raw_data?: Json | null
           ocr_extracted_text?: string | null
+          merchant_name?: string | null
           rejection_reason?: string | null
           report_id?: string
           reviewed_at?: string | null

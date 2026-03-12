@@ -12,6 +12,7 @@ interface ExpenseWebhookPayload {
   moneda: string;
   fecha: string;
   comprobante_url: string;
+  merchant_name?: string;
 }
 
 export async function sendExpenseWebhook(expense: ExpenseWebhookPayload) {
@@ -31,6 +32,7 @@ export async function sendExpenseWebhook(expense: ExpenseWebhookPayload) {
       fecha: expense.fecha,
       rendicion_id: expense.report_id,
       user_id: expense.user_id,
+      merchant_name: expense.merchant_name ?? null,
     },
     webhookUrl: N8N_WEBHOOK_URL,
     executionMode: "production",

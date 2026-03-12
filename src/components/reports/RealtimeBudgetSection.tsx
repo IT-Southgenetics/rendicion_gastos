@@ -63,9 +63,16 @@ export function RealtimeBudgetSection({
   }, [reportId, supabase]);
 
   // Cálculos derivados
+  const effectiveExpenses = expenses.filter(
+    (e) => e.status !== "rejected",
+  );
+
   const totalUSD = totalInUSD(
-    expenses.map((e) => ({ amount: Number(e.amount), currency: e.currency ?? "UYU" })),
-    savedRates
+    effectiveExpenses.map((e) => ({
+      amount: Number(e.amount),
+      currency: e.currency ?? "UYU",
+    })),
+    savedRates,
   );
 
   const hasRates    = Object.keys(savedRates).length > 0;
@@ -76,7 +83,7 @@ export function RealtimeBudgetSection({
   const pendingCount  = expenses.filter((e) => e.status === "pending").length;
 
   const totalsByCurrency: Record<string, number> = {};
-  for (const e of expenses) {
+  for (const e of effectiveExpenses) {
     const cur = e.currency ?? "UYU";
     totalsByCurrency[cur] = (totalsByCurrency[cur] ?? 0) + Number(e.amount ?? 0);
   }

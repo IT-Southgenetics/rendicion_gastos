@@ -45,6 +45,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
   const endDate   = new Date(r.week_end   + "T12:00:00");
 
   const expenseList = (expenses ?? []) as Expense[];
+  const nonRejectedExpenses = expenseList.filter((e) => e.status !== "rejected");
 
   // Presets globales como base, sobreescritos por las tasas propias del reporte
   const globalPresets: Record<string, number> = {};
@@ -54,8 +55,14 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
 
   const budgetMax      = r.budget_max ? Number(r.budget_max) : null;
   const hasRates       = Object.keys(effectiveRates).length > 0;
-  const totalCalculado = expenseList.reduce((acc, e) => acc + Number(e.amount ?? 0), 0);
-  const totalUSD       = totalInUSD(expenseList.map((e) => ({ amount: Number(e.amount), currency: e.currency ?? "UYU" })), effectiveRates);
+  const totalCalculado = nonRejectedExpenses.reduce((acc, e) => acc + Number(e.amount ?? 0), 0);
+  const totalUSD       = totalInUSD(
+    nonRejectedExpenses.map((e) => ({
+      amount: Number(e.amount),
+      currency: e.currency ?? "UYU",
+    })),
+    effectiveRates,
+  );
   const budgetOverrun  = !!(budgetMax && totalUSD !== null && totalUSD > budgetMax);
 
   return (
@@ -108,7 +115,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
         reportId={r.id}
         budgetMax={budgetMax}
         savedRates={effectiveRates}
-        initialExpenses={expenseList.map((e) => ({
+        initialExpenses={nonRejectedExpenses.map((e) => ({
           id:       e.id,
           amount:   Number(e.amount ?? 0),
           currency: e.currency ?? "UYU",
@@ -228,12 +235,19 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                         <ExpenseStatusBadge status={expense.status ?? "pending"} />
                       </td>
                       <td className="px-4 py-3 align-middle text-right">
-                        {(expense.status === "pending" || expense.status === "reviewing") && (
+                        {expense.status === "reviewing" ? (
                           <Link
                             href={`/dashboard/expenses/${expense.id}/edit`}
+                            className="text-xs font-semibold text-amber-600 hover:underline"
+                          >
+                            Corregir
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/dashboard/expenses/${expense.id}`}
                             className="text-xs font-medium text-[var(--color-primary)] hover:underline"
                           >
-                            Editar
+                            Ver
                           </Link>
                         )}
                       </td>

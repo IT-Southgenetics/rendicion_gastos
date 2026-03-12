@@ -75,6 +75,7 @@ export function SupervisorExpenseActions({
     setComment("");
     setOpen(false);
     router.refresh();
+    router.back();
   }
 
   if (isFinal) {

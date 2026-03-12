@@ -45,6 +45,7 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
   const [filesUploaded, setFilesUploaded] = useState<UploadedFile[]>([]);
   const [categoria,   setCategoria]  = useState<ExpenseCategory>("transport");
   const [descripcion, setDescripcion] = useState("");
+  const [merchant,    setMerchant]    = useState("");
   const [moneda,      setMoneda]      = useState<string>("UYU");
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
 
@@ -92,6 +93,7 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
         user_id:              session.user.id,
         category:             categoria,
         description:          descripcion.trim(),
+        merchant_name:        merchant.trim() || null,
         amount:               0,
         currency:             moneda,
         expense_date:         todayStr,
@@ -125,6 +127,7 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
       moneda:          expense.currency ?? "UYU",
       fecha:           expense.expense_date,
       comprobante_url: allUrls[0],
+      merchant_name:   expense.merchant_name ?? undefined,
     });
 
     if (!webhookResult.success) {
@@ -201,6 +204,25 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
         />
         <p className="text-right text-[0.7rem] text-[var(--color-text-muted)]">
           {descripcion.length} / 300
+        </p>
+      </section>
+
+      {/* ── Comercio / Empresa ───────────────────────────────── */}
+      <section className="space-y-2">
+        <label className="block text-sm font-semibold text-[var(--color-text-primary)]">
+          Comercio / Empresa{" "}
+          <span className="font-normal text-[var(--color-text-muted)]">(opcional)</span>
+        </label>
+        <input
+          type="text"
+          className="input"
+          placeholder="Nombre del comercio, empresa o proveedor..."
+          value={merchant}
+          onChange={(e) => setMerchant(e.target.value)}
+          maxLength={120}
+        />
+        <p className="text-[0.7rem] text-[var(--color-text-muted)]">
+          Si subís un ticket, este campo se puede completar automáticamente a partir de la lectura del comprobante.
         </p>
       </section>
 

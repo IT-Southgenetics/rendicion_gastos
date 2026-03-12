@@ -40,6 +40,17 @@ export async function POST(req: NextRequest) {
       if (extracted_data.date) {
         update.expense_date = extracted_data.date;
       }
+      if (
+        extracted_data.merchant ||
+        (extracted_data as any).merchant_name ||
+        (extracted_data as any).vendor_name
+      ) {
+        update.merchant_name =
+          (extracted_data as any).merchant_name ??
+          (extracted_data as any).vendor_name ??
+          extracted_data.merchant ??
+          null;
+      }
     }
 
     await supabase
