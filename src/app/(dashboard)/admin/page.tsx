@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { GlobalExchangeRateEditor } from "@/components/admin/GlobalExchangeRateEditor";
 
 export default async function AdminHomePage() {
   const supabase = await createSupabaseServerClient();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
+
+  const me = await getMyProfile(supabase, session);
+  if (me?.role !== "admin") redirect("/dashboard");
 
   const [
     { data: users },

@@ -6,6 +6,7 @@ import { toUSD, totalInUSD, fmt } from "@/lib/currency";
 import { approveReportAction } from "@/app/(dashboard)/reports/[id]/approveReportAction";
 import { returnReportAction } from "@/app/(dashboard)/reports/[id]/returnReportAction";
 import { PayReportModal } from "@/components/reports/PayReportModal";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 const CATEGORY_LABELS: Record<string, string> = {
   transport:       "Transporte",
@@ -33,8 +34,7 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: me } = await supabase
-    .from("profiles").select("role").eq("id", session.user.id).single();
+  const me = await getMyProfile(supabase, session);
   const isPagador = me?.role === "pagador";
   if (me?.role !== "aprobador" && me?.role !== "admin" && !isPagador) redirect("/dashboard");
 
@@ -55,7 +55,7 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
       .eq("supervisor_id", session.user.id)
       .eq("employee_id", report.user_id)
       .maybeSingle();
-    if (!assignment) redirect("/dashboard/supervisor");
+    if (!assignment) redirect("/dashboard/aprobador");
   }
 
   const { data: expenses } = await supabase
@@ -76,6 +76,10 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
     | "needs_correction"
     | "approved"
     | "paid";
+
+  const expenseReturnTo = returnTo
+    ? `/dashboard/aprobador/reports/${report.id}?returnTo=${encodeURIComponent(returnTo)}`
+    : `/dashboard/aprobador/reports/${report.id}`;
 
   const allExpensesApproved =
     expenseList.length > 0 && expenseList.every((e) => e.status === "approved");
@@ -328,7 +332,7 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
               return (
                 <Link
                   key={expense.id}
-                  href={`/dashboard/expenses/${expense.id}?returnTo=/dashboard/supervisor/reports/${report.id}`}
+                  href={`/dashboard/expenses/${expense.id}?returnTo=${encodeURIComponent(expenseReturnTo)}`}
                   className="block hover:bg-[#fdfbff] transition-colors"
                 >
                   <div className="p-4">

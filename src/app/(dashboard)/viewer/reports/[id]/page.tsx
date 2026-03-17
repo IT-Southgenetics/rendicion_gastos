@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import { toUSD, totalInUSD, fmt } from "@/lib/currency";
 import { PayReportModal } from "@/components/reports/PayReportModal";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 const CATEGORY_LABELS: Record<string, string> = {
   transport: "Transporte",
@@ -28,11 +29,7 @@ export default async function ViewerReportDetailPage({ params }: Props) {
   } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .single();
+  const me = await getMyProfile(supabase, session);
   const isPagador = me?.role === "pagador";
   if (me?.role !== "chusmas" && me?.role !== "admin" && !isPagador)
     redirect("/dashboard");

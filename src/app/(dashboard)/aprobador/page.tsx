@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 const ROLE_LABELS: Record<string, string> = {
   employee:   "Empleado",
@@ -13,8 +14,7 @@ export default async function AprobadorHomePage() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: me } = await supabase
-    .from("profiles").select("role").eq("id", session.user.id).single();
+  const me = await getMyProfile(supabase, session);
   if (me?.role !== "aprobador" && me?.role !== "admin") redirect("/dashboard");
 
   // Get supervised employees

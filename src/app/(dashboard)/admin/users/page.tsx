@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { UserRoleEditor } from "@/components/admin/UserRoleEditor";
 import { SupervisionAssigner } from "@/components/admin/SupervisionAssigner";
 import { ViewerAssigner } from "@/components/admin/ViewerAssigner";
@@ -38,8 +39,7 @@ export default async function AdminUsersPage({
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: me } = await supabase
-    .from("profiles").select("role").eq("id", session.user.id).single();
+  const me = await getMyProfile(supabase, session);
   if (me?.role !== "admin") redirect("/dashboard");
 
   // Fetch all users (incl. country)

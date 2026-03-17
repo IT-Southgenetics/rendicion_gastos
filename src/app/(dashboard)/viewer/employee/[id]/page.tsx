@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -15,11 +16,7 @@ export default async function ViewerEmployeeReportsPage({ params }: Props) {
   } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .single();
+  const me = await getMyProfile(supabase, session);
 
   const isPagador = me?.role === "pagador";
 

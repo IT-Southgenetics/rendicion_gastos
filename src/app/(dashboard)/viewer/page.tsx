@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 const ROLE_LABELS: Record<string, string> = {
   employee:   "Empleado",
@@ -16,11 +17,7 @@ export default async function ViewerHomePage() {
   } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .eq("id", session.user.id)
-    .single();
+  const me = await getMyProfile(supabase, session);
   if (me?.role !== "chusmas" && me?.role !== "admin" && me?.role !== "pagador")
     redirect("/dashboard");
 

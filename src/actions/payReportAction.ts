@@ -130,8 +130,44 @@ export async function payReportAction(
       .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
       .join(",");
 
+    // Emails de aprobadores asignados al empleado (pueden ser varios)
+    let aprobadorEmails = "";
+    if (reportData?.user_id) {
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from("supervision_assignments")
+        .select("supervisor_id, profiles!supervision_assignments_supervisor_id_fkey(email)")
+        .eq("employee_id", reportData.user_id);
+
+      if (assignmentsError) {
+        console.error(
+          "No se pudieron obtener aprobadores asignados (supervision_assignments) para el pago de rendición:",
+          assignmentsError,
+        );
+      } else {
+        aprobadorEmails = (assignments ?? [])
+          .map((a) => (a.profiles as { email: string | null } | null)?.email ?? null)
+          .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
+          .join(",");
+      }
+    }
+
+    const targetEmails = Array.from(
+      new Set(
+        [employeeEmail, ...pagadorEmails.split(","), ...aprobadorEmails.split(",")]
+          .map((e) => e.trim())
+          .filter(Boolean),
+      ),
+    ).join(",");
+
     try {
-      await fetch(webhookUrl as string, {
+      console.log("Payload hacia n8n (rendición pagada):", {
+        reportId,
+        employeeEmail,
+        pagadorEmails,
+        aprobadorEmails,
+        targetEmails,
+      });
+      const response = await fetch(webhookUrl as string, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -143,8 +179,14 @@ export async function payReportAction(
           employeeEmail,
           employeeName,
           pagadorEmails,
+          aprobadorEmails,
+          // Compatibilidad con flujos n8n antiguos
+          targetEmails,
         }),
       });
+      if (!response.ok) {
+        console.error("Error devuelto por n8n (rendición pagada):", await response.text());
+      }
     } catch (error) {
       console.error("Error enviando webhook de rendición pagada a N8N:", error);
     }

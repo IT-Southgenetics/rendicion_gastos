@@ -142,21 +142,7 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
       return;
     }
 
-    // Si estaba en revisión o rechazado, notificar que se corrigió y se reenvía
-    if (canResubmit) {
-      try {
-        await fetch("/api/gasto-corregido", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            expenseId: expense.id,
-            employeeResponse: employeeResponse.trim(),
-          }),
-        });
-      } catch (err) {
-        console.error("Error llamando webhook de gasto corregido:", err);
-      }
-    }
+    // Nota: ya no se envían webhooks por gasto individual.
 
     toast.success("Gasto actualizado correctamente.");
     router.push(`/dashboard/expenses/${expense.id}`);

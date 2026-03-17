@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { CountryFilter } from "@/components/admin/CountryFilter";
 
 export default async function AdminReportsPage({
@@ -19,13 +20,8 @@ export default async function AdminReportsPage({
   if (!session) return null;
 
   // Verificar que sea admin
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .single();
-
-  if (profile?.role !== "admin") redirect("/dashboard");
+  const me = await getMyProfile(supabase, session);
+  if (me?.role !== "admin") redirect("/dashboard");
 
   // Traer todas las rendiciones con datos del usuario (incl. país) y conteo de gastos
   const { data: rawReports } = await supabase

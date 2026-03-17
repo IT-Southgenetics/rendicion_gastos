@@ -90,21 +90,37 @@ export async function approveReportAction(formData: FormData) {
           .filter((e): e is string => typeof e === "string" && e.trim().length > 0) ?? [];
 
       const pagadorEmails = payerEmailArray.join(",");
+      const employeeEmail =
+        typeof employeeData?.email === "string" ? employeeData.email : "";
+
+      const targetEmails = Array.from(
+        new Set(
+          [employeeEmail, ...pagadorEmails.split(",")]
+            .map((e) => e.trim())
+            .filter(Boolean),
+        ),
+      ).join(",");
 
       const payload = {
         reportId: reportId,
         employeeName: employeeData?.full_name || "Empleado",
+        employeeEmail,
         pagadorEmails,
+        // Compatibilidad con flujos n8n antiguos
+        targetEmails,
       };
 
       console.log("Payload Aprobación:", payload);
 
       try {
-        await fetch(webhookUrl as string, {
+        const response = await fetch(webhookUrl as string, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+        if (!response.ok) {
+          console.error("Error devuelto por n8n (rendición aprobada):", await response.text());
+        }
       } catch (error) {
         console.error("Error enviando webhook de rendición aprobada a N8N:", error);
       }

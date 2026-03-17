@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { TicketUploader, type UploadedFile } from "./TicketUploader";
-import { sendExpenseWebhook } from "@/lib/n8n/sendExpenseWebhook";
 import type { Enums } from "@/types/database";
 
 type ExpenseCategory = Enums<"expense_category">;
@@ -114,40 +113,8 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
       return;
     }
 
-    // ── Enviar webhook a N8N (procesamiento OCR) ─────────────────────────────
-    setSubmitState("sending");
-
-    const webhookResult = await sendExpenseWebhook({
-      id:              expense.id,
-      report_id:       expense.report_id,
-      user_id:         expense.user_id,
-      categoria:       expense.category,
-      descripcion:     expense.description,
-      monto:           Number(expense.amount),
-      moneda:          expense.currency ?? "UYU",
-      fecha:           expense.expense_date,
-      comprobante_url: allUrls[0],
-      merchant_name:   expense.merchant_name ?? undefined,
-    });
-
-    if (!webhookResult.success) {
-      toast("Gasto guardado. El comprobante se procesará manualmente.", { icon: "⚠️" });
-    } else {
-      toast.success("¡Gasto cargado correctamente!");
-    }
-
-    // ── Notificar a supervisores del empleado (webhook nuevo gasto) ─────────
-    try {
-      await fetch("/api/nuevo-gasto-supervisor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ expenseId: expense.id }),
-      });
-    } catch (error) {
-      console.error("Error enviando webhook de nuevo gasto a supervisor:", error);
-      // No hacemos throw para no bloquear la UI; el gasto ya se guardó
-    }
-
+    // Nota: ya no se envían webhooks por gasto individual.
+    toast.success("¡Gasto cargado correctamente!");
     setSubmitState("success");
     router.push(returnTo);
     router.refresh();

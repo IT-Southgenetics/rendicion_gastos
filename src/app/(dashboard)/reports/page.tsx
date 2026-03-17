@@ -70,16 +70,14 @@ export default async function ReportsPage() {
     .eq("id", session.user.id)
     .single();
 
-  const isChusma = me?.role === "chusmas";
-
   const baseQuery = supabase
     .from("weekly_reports")
     .select("*, expenses(count)")
     .order("week_start", { ascending: false });
 
-  const { data: reports } = isChusma
-    ? await baseQuery
-    : await baseQuery.eq("user_id", session.user.id);
+  // Esta vista siempre muestra SOLO las rendiciones del usuario logueado,
+  // incluso si el rol es "chusmas" (auditoría va en /dashboard/chusma-view).
+  const { data: reports } = await baseQuery.eq("user_id", session.user.id);
 
   return (
     <div className="space-y-5">

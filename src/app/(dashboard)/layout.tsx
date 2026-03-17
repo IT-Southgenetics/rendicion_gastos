@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServerClient();
@@ -13,15 +14,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   let isViewer     = false;
   let isPagador    = false;
   if (session) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", session.user.id)
-      .single();
-    isAdmin      = profile?.role === "admin";
-    isSupervisor = profile?.role === "aprobador";
-    isViewer     = profile?.role === "chusmas";
-    isPagador    = profile?.role === "pagador";
+    const me = await getMyProfile(supabase, session);
+    const role = me?.role ?? null;
+
+    isAdmin      = role === "admin";
+    isSupervisor = role === "aprobador";
+    // Compatibilidad: algunos entornos usaron "chusma" (singular)
+    isViewer     = role === "chusmas" || role === "chusma";
+    isPagador    = role === "pagador";
   }
 
   return (

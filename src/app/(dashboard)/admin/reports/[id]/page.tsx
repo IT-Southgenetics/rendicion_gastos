@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import { ExpenseAdminActions } from "@/components/expenses/ExpenseAdminActions";
 import { ExchangeRateEditor } from "@/components/reports/ExchangeRateEditor";
@@ -36,9 +37,8 @@ export default async function AdminReportDetailPage({ params }: Props) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", session.user.id).single();
-  if (profile?.role !== "admin") redirect("/dashboard");
+  const me = await getMyProfile(supabase, session);
+  if (me?.role !== "admin") redirect("/dashboard");
 
   const [{ data: report }, { data: expenses }, { data: presets }] = await Promise.all([
     supabase

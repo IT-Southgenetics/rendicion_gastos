@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import { RealtimeBudgetSection } from "@/components/reports/RealtimeBudgetSection";
 import { toUSD, totalInUSD, fmt } from "@/lib/currency";
@@ -41,13 +42,8 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .single();
-
-  const isChusma = me?.role === "chusmas";
+  const me = await getMyProfile(supabase, session);
+  const isChusma = me?.role === "chusmas" || me?.role === "chusma";
 
   const reportQuery = supabase.from("weekly_reports").select("*").eq("id", id);
   if (!isChusma) {

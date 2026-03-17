@@ -68,6 +68,8 @@ export async function submitReportAction(formData: FormData) {
       employeeName: employee?.full_name ?? "",
       employeeEmail: employee?.email ?? "",
       supervisorEmails,
+      // Compatibilidad con flujos n8n antiguos
+      targetEmails: supervisorEmails,
     };
 
     console.log("Payload hacia n8n (nueva rendición):", payload);
@@ -79,6 +81,9 @@ export async function submitReportAction(formData: FormData) {
         body: JSON.stringify(payload),
       });
       console.log("Status de n8n (nueva rendición):", response.status);
+      if (!response.ok) {
+        console.error("Error devuelto por n8n (nueva rendición):", await response.text());
+      }
     } catch (error) {
       console.error("Error enviando webhook de nueva rendición a N8N:", error);
     }

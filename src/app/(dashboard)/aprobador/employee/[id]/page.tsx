@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -17,22 +18,18 @@ export default async function AprobadorEmployeeDetailPage({ params }: Props) {
   if (!session) return null;
 
   // Verificar que el usuario es aprobador o admin
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("id, role, full_name")
-    .eq("id", session.user.id)
-    .single();
+  const me = await getMyProfile(supabase, session);
 
   if (me?.role !== "aprobador" && me?.role !== "admin") {
     redirect("/dashboard");
   }
 
   // Verificar que realmente apruebe a este empleado (si no es admin)
-  if (me.role === "aprobador") {
+  if (me?.role === "aprobador") {
     const { data: assignment } = await supabase
       .from("supervision_assignments")
       .select("id")
-      .eq("supervisor_id", me.id)
+      .eq("supervisor_id", session.user.id)
       .eq("employee_id", employeeId)
       .maybeSingle();
 

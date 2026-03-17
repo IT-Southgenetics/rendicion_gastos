@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import type { Tables } from "@/types/database";
 
 type Expense = Tables<"expenses">;
+type ProfileLite = { full_name: string | null; email: string | null } | null;
 
 const CATEGORY_LABELS: Record<string, string> = {
   transport:       "Transporte",
@@ -21,24 +23,36 @@ export default async function ExpensesPage() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: expenses } = await supabase
+  const me = await getMyProfile(supabase, session);
+  const isAdmin = me?.role === "admin";
+
+  const expensesQuery = supabase
     .from("expenses")
-    .select("*")
-    .eq("user_id", session.user.id)
+    .select("*, profiles!expenses_user_id_fkey(full_name, email)")
     .order("expense_date", { ascending: false });
+
+  if (!isAdmin) {
+    expensesQuery.eq("user_id", session.user.id);
+  }
+
+  const { data: expenses } = await expensesQuery;
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="page-title">Histórico de gastos</h1>
-        <p className="page-subtitle">Todos los gastos registrados en tus rendiciones.</p>
+        <p className="page-subtitle">
+          {isAdmin
+            ? "Vista administrador: todos los gastos del sistema."
+            : "Todos los gastos registrados en tus rendiciones."}
+        </p>
       </div>
 
       {expenses && expenses.length > 0 ? (
         <>
           {/* Cards — mobile */}
           <div className="space-y-2 md:hidden">
-            {(expenses as Expense[]).map((expense) => (
+            {(expenses as Array<Expense & { profiles?: ProfileLite }>).map((expense) => (
               <Link
                 key={expense.id}
                 href={`/dashboard/expenses/${expense.id}`}
@@ -48,6 +62,11 @@ export default async function ExpensesPage() {
                   <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
                     {expense.description}
                   </p>
+                  {isAdmin && (
+                    <p className="mt-0.5 text-[0.65rem] text-[var(--color-text-muted)] truncate">
+                      {(expense.profiles?.full_name ?? expense.profiles?.email) || "—"}
+                    </p>
+                  )}
                   <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
                     {CATEGORY_LABELS[expense.category] ?? expense.category}
                     {" · "}
@@ -72,6 +91,7 @@ export default async function ExpensesPage() {
             <table className="min-w-full text-left text-sm">
               <thead className="bg-[#f5f1f8] text-xs uppercase text-[var(--color-text-muted)]">
                 <tr>
+                  {isAdmin && <th className="px-4 py-3 font-medium">Empleado</th>}
                   <th className="px-4 py-3 font-medium">Fecha</th>
                   <th className="px-4 py-3 font-medium">Descripción</th>
                   <th className="px-4 py-3 font-medium">Categoría</th>
@@ -81,8 +101,13 @@ export default async function ExpensesPage() {
                 </tr>
               </thead>
               <tbody>
-                {(expenses as Expense[]).map((expense) => (
+                {(expenses as Array<Expense & { profiles?: ProfileLite }>).map((expense) => (
                   <tr key={expense.id} className="border-t border-[#f0ecf4] hover:bg-[#faf7fd] transition-colors">
+                    {isAdmin && (
+                      <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
+                        {(expense.profiles?.full_name ?? expense.profiles?.email) || "—"}
+                      </td>
+                    )}
                     <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] whitespace-nowrap">
                       {new Date(expense.expense_date + "T12:00:00").toLocaleDateString("es-UY")}
                     </td>
