@@ -43,10 +43,30 @@ export default async function AdminUsersPage({
   if (me?.role !== "admin") redirect("/dashboard");
 
   // Fetch all users (incl. country)
-  const { data: rawUsers } = await supabase
+  const { data: rawUsers, error: rawUsersError } = await supabase
     .from("profiles")
     .select("id, full_name, email, role, department, is_active, created_at, country")
     .order("full_name", { ascending: true });
+
+  if (rawUsersError) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h1 className="page-title">Gestión de usuarios</h1>
+          <p className="page-subtitle">Administrá roles y asignaciones de aprobación.</p>
+        </div>
+        <div className="card p-6 space-y-2">
+          <p className="text-sm font-semibold text-red-700">Error cargando usuarios</p>
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Esto suele ser un problema de permisos/RLS en Supabase para la tabla <code>profiles</code>.
+          </p>
+          <pre className="whitespace-pre-wrap rounded-lg bg-[#faf7fd] p-3 text-xs text-[var(--color-text-primary)]">
+            {rawUsersError.message}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   const users = (rawUsers ?? []).filter((u) => {
     if (!countryFilter?.length) return true;

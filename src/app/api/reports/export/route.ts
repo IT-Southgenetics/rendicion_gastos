@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { generateReportWorkbook } from "@/lib/excel/generateReport";
+import { generateExcelExport } from "@/lib/excelGenerator";
 
 export const dynamic = "force-dynamic";
 
@@ -37,54 +37,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { data: expenses, error: expensesError } = await supabase
-    .from("expenses")
-    .select("expense_date, category, description, amount, currency, status, ticket_url, rejection_reason")
-    .eq("report_id", reportId)
-    .order("expense_date", { ascending: true });
+  const { buffer, fileName } = await generateExcelExport(reportId);
 
-  if (expensesError) {
-    return NextResponse.json(
-      { error: "No se pudieron obtener los gastos" },
-      { status: 500 }
-    );
-  }
-
-  // Fetch global presets as fallback for reports without per-report rates
-  const { data: presets } = await supabase
-    .from("exchange_rate_presets")
-    .select("currency, rate");
-
-  const globalPresets: Record<string, number> = {};
-  for (const p of presets ?? []) globalPresets[p.currency] = Number(p.rate);
-
-  const reportRates   = (report.exchange_rates ?? {}) as Record<string, number>;
-  const exchangeRates: Record<string, number> = { ...globalPresets, ...reportRates };
-
-  const employeeName = (report as any).profiles?.full_name ?? "";
-  const title = report.title ?? null;
-
-  // Build safe filename from title or dates
-  const safeTitle = title
-    ? title.replace(/[^a-zA-Z0-9_\- ]/g, "").trim().replace(/\s+/g, "_").slice(0, 40)
-    : `${report.week_start}_${report.week_end}`;
-
-  const buffer = generateReportWorkbook({
-    employeeName,
-    title,
-    weekStart: report.week_start,
-    weekEnd: report.week_end,
-    closedAt: report.closed_at,
-    exchangeRates,
-    expenses: (expenses ?? []) as any,
-  });
-
-  return new NextResponse(buffer, {
+  return new NextResponse(buffer as unknown as BodyInit, {
     status: 200,
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="rendicion_${safeTitle}.xlsx"`,
+      "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   });
 }

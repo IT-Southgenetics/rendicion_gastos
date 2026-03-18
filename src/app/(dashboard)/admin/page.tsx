@@ -64,7 +64,7 @@ export default async function AdminHomePage() {
       {/* Acciones rápidas */}
       <div className="grid gap-3 sm:grid-cols-2">
         <Link
-          href="/dashboard/admin/reports"
+          href="/admin/reports"
           className="card flex items-center gap-4 p-5 hover:shadow-md transition-shadow"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
@@ -82,7 +82,7 @@ export default async function AdminHomePage() {
         </Link>
 
         <Link
-          href="/dashboard/admin/users"
+          href="/admin/users"
           className="card flex items-center gap-4 p-5 hover:shadow-md transition-shadow"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--color-secondary)]/10">

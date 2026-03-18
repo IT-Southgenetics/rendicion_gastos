@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { generateExcelExport } from "@/lib/excelGenerator";
 
 export async function submitReportAction(formData: FormData) {
   "use server";
@@ -62,6 +63,16 @@ export async function submitReportAction(formData: FormData) {
       .filter((e): e is string => !!e)
       .join(",");
 
+    let excelBase64 = "";
+    let excelName = `Rendicion_${reportId.slice(0, 6)}.xlsx`;
+    try {
+      const { buffer, fileName } = await generateExcelExport(reportId);
+      excelBase64 = buffer.toString("base64");
+      excelName = fileName;
+    } catch (e) {
+      console.error("No se pudo generar Excel para webhook (nueva rendición):", e);
+    }
+
     const payload = {
       reportId,
       employeeId: session!.user.id,
@@ -70,6 +81,8 @@ export async function submitReportAction(formData: FormData) {
       supervisorEmails,
       // Compatibilidad con flujos n8n antiguos
       targetEmails: supervisorEmails,
+      excelBase64,
+      excelName,
     };
 
     console.log("Payload hacia n8n (nueva rendición):", payload);

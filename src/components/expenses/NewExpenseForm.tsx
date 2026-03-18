@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { TicketUploader, type UploadedFile } from "./TicketUploader";
 import type { Enums } from "@/types/database";
+import { sendExpenseWebhook } from "@/lib/n8n/sendExpenseWebhook";
 
 type ExpenseCategory = Enums<"expense_category">;
 
@@ -113,7 +114,25 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
       return;
     }
 
-    // Nota: ya no se envían webhooks por gasto individual.
+    // Disparar webhook a n8n para análisis de factura (empresa / monto)
+    try {
+      await sendExpenseWebhook({
+        id: expense.id,
+        report_id: expense.report_id,
+        user_id: expense.user_id,
+        categoria: expense.category,
+        descripcion: expense.description,
+        monto: Number(expense.amount) || 0,
+        moneda: expense.currency ?? moneda,
+        fecha: expense.expense_date ?? todayStr,
+        comprobante_url: expense.ticket_url ?? allUrls[0],
+        merchant_name: expense.merchant_name ?? undefined,
+      });
+    } catch (err) {
+      console.error("Error enviando webhook de factura a n8n:", err);
+      // No bloqueamos al usuario si falla el webhook
+    }
+
     toast.success("¡Gasto cargado correctamente!");
     setSubmitState("success");
     router.push(returnTo);

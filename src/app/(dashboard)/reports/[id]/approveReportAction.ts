@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { generateExcelExport } from "@/lib/excelGenerator";
 
 export async function approveReportAction(formData: FormData) {
   "use server";
@@ -23,7 +24,7 @@ export async function approveReportAction(formData: FormData) {
     await Promise.all([
       supabase
         .from("weekly_reports")
-        .select("id, user_id")
+        .select("id, user_id, title")
         .eq("id", reportId)
         .single(),
       supabase
@@ -63,7 +64,12 @@ export async function approveReportAction(formData: FormData) {
 
   const { error: updateError } = await supabase
     .from("weekly_reports")
-    .update({ workflow_status: "approved", status: "closed" })
+    .update({
+      workflow_status: "approved",
+      status: "closed",
+      closed_by: session.user.id,
+      closed_at: new Date().toISOString(),
+    })
     .eq("id", reportId);
 
   if (updateError) {
@@ -101,13 +107,26 @@ export async function approveReportAction(formData: FormData) {
         ),
       ).join(",");
 
+      let excelBase64 = "";
+      let excelName = `Rendicion_${reportId.slice(0, 6)}.xlsx`;
+      try {
+        const { buffer, fileName } = await generateExcelExport(reportId);
+        excelBase64 = buffer.toString("base64");
+        excelName = fileName;
+      } catch (e) {
+        console.error("No se pudo generar Excel para webhook (rendición aprobada):", e);
+      }
+
       const payload = {
         reportId: reportId,
+        reportTitle: report?.title ?? "",
         employeeName: employeeData?.full_name || "Empleado",
         employeeEmail,
         pagadorEmails,
         // Compatibilidad con flujos n8n antiguos
         targetEmails,
+        excelBase64,
+        excelName,
       };
 
       console.log("Payload Aprobación:", payload);

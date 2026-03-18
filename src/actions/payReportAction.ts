@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { generateExcelExport } from "@/lib/excelGenerator";
 
 export type PayReportState =
   | { ok: true }
@@ -159,6 +160,16 @@ export async function payReportAction(
       ),
     ).join(",");
 
+    let excelBase64 = "";
+    let excelName = `Rendicion_${reportId.slice(0, 6)}.xlsx`;
+    try {
+      const { buffer, fileName } = await generateExcelExport(reportId);
+      excelBase64 = buffer.toString("base64");
+      excelName = fileName;
+    } catch (e) {
+      console.error("No se pudo generar Excel para webhook (rendición pagada):", e);
+    }
+
     try {
       console.log("Payload hacia n8n (rendición pagada):", {
         reportId,
@@ -182,6 +193,8 @@ export async function payReportAction(
           aprobadorEmails,
           // Compatibilidad con flujos n8n antiguos
           targetEmails,
+          excelBase64,
+          excelName,
         }),
       });
       if (!response.ok) {

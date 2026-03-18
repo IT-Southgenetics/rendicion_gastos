@@ -2,9 +2,24 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
+import { ChusmaFilters } from "@/components/chusma/ChusmaFilters";
 
-export default async function ChusmaViewPage() {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function pickParam(sp: SearchParams, key: string): string | undefined {
+  const v = sp[key];
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v[0];
+  return undefined;
+}
+
+export default async function ChusmaViewPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   const supabase = await createSupabaseServerClient();
+  const sp = await searchParams;
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -16,44 +31,19 @@ export default async function ChusmaViewPage() {
   const isAdmin = me?.role === "admin";
   if (!isChusma && !isAdmin) redirect("/dashboard");
 
-  let employeeIds: string[] = [];
-  if (isAdmin) {
-    const { data: employees } = await supabase
-      .from("profiles")
-      .select("id")
-      .in("role", ["employee", "seller", "aprobador", "chusmas", "pagador"]);
-    employeeIds = (employees ?? []).map((e) => e.id);
-  } else {
-    const { data: assignments } = await supabase
-      .from("viewer_assignments")
-      .select("employee_id")
-      .eq("viewer_id", session.user.id);
-    employeeIds = (assignments ?? [])
-      .map((a) => a.employee_id as string)
-      .filter(Boolean);
-  }
+  // Regla de negocio: chusmas ven TODAS las rendiciones que ya pasaron revisión (approved/paid).
+  // Admin también puede ver todas.
+  const status = pickParam(sp, "status")?.trim();
+  const country = pickParam(sp, "country")?.trim();
+  const employee = pickParam(sp, "employee")?.trim();
+  const approver = pickParam(sp, "approver")?.trim();
+  const from = pickParam(sp, "from")?.trim(); // YYYY-MM-DD
+  const to = pickParam(sp, "to")?.trim(); // YYYY-MM-DD
 
-  if (employeeIds.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="page-title">Auditoría</h1>
-          <p className="page-subtitle">Panel de rendiciones asignadas.</p>
-        </div>
-        <div className="card p-10 text-center space-y-2">
-          <p className="text-2xl">👀</p>
-          <p className="text-sm text-[var(--color-text-muted)]">
-            No tenés empleados asignados aún para auditoría.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const needsEmployeeJoin = Boolean(country) || Boolean(employee);
+  const needsApproverJoin = Boolean(approver);
 
-  const { data: reports } = await supabase
-    .from("weekly_reports")
-    .select(
-      `
+  const select = `
       id,
       title,
       created_at,
@@ -61,15 +51,44 @@ export default async function ChusmaViewPage() {
       total_amount,
       workflow_status,
       user_id,
-      employee:profiles!weekly_reports_user_id_fkey(full_name, country),
-      approver:profiles!weekly_reports_closed_by_fkey(full_name)
-      `,
-    )
-    .in("user_id", employeeIds)
-    .in("workflow_status", ["approved", "paid"])
-    .order("created_at", { ascending: false });
+      employee:profiles!weekly_reports_user_id_fkey${needsEmployeeJoin ? "!inner" : ""}(full_name, country),
+      approver:profiles!weekly_reports_closed_by_fkey${needsApproverJoin ? "!inner" : ""}(full_name)
+      `;
 
-  const reportList = (reports ?? []) as Array<{
+  let reportsQuery = supabase
+    .from("weekly_reports")
+    .select(select);
+
+  if (status === "approved" || status === "paid") {
+    reportsQuery = reportsQuery.eq("workflow_status", status);
+  } else {
+    reportsQuery = reportsQuery.in("workflow_status", ["approved", "paid"]);
+  }
+
+  if (country) {
+    reportsQuery = reportsQuery.ilike("employee.country", `%${country}%`);
+  }
+  if (employee) {
+    reportsQuery = reportsQuery.ilike("employee.full_name", `%${employee}%`);
+  }
+  if (approver) {
+    reportsQuery = reportsQuery.ilike("approver.full_name", `%${approver}%`);
+  }
+  const isISODate = (s?: string) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  if (isISODate(from)) {
+    const start = new Date(from + "T00:00:00.000Z").toISOString();
+    reportsQuery = reportsQuery.gte("created_at", start);
+  }
+  if (isISODate(to)) {
+    const end = new Date(to + "T23:59:59.999Z").toISOString();
+    reportsQuery = reportsQuery.lte("created_at", end);
+  }
+
+  reportsQuery = reportsQuery.order("created_at", { ascending: false });
+
+  const { data: reports } = await reportsQuery;
+
+  const reportList = (reports ?? []) as unknown as Array<{
     id: string;
     title: string | null;
     created_at: string | null;
@@ -89,6 +108,17 @@ export default async function ChusmaViewPage() {
           Rendiciones aprobadas o pagadas (solo lectura).
         </p>
       </div>
+
+      <ChusmaFilters
+        searchParams={{
+          status,
+          country,
+          employee,
+          approver,
+          from,
+          to,
+        }}
+      />
 
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">

@@ -11,9 +11,12 @@ export async function getMyProfile(
 ): Promise<MyProfile | null> {
   const emailRaw = session.user.email?.trim() ?? "";
 
-  // Fallback duro: si el usuario es nalvez@southgenetics.com, siempre es admin
+  // Fallback duro: si el usuario es nalvez@southgenetics.com (o su UID), siempre es admin
   // (independientemente de que falle el lookup por id/email).
-  if (emailRaw.toLowerCase() === "nalvez@southgenetics.com") {
+  if (
+    session.user.id === "ad363af8-a3fc-43de-83c8-74f8ad53f500" ||
+    emailRaw.toLowerCase() === "nalvez@southgenetics.com"
+  ) {
     return {
       id: session.user.id,
       role: "admin",
