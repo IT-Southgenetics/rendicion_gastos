@@ -91,11 +91,17 @@ export default async function ViewerReportDetailPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <Link
-          href="/dashboard/viewer"
+          href={
+            isPagador
+              ? `/dashboard/viewer/employee/${report.user_id}`
+              : "/dashboard/viewer"
+          }
           className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.7rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
         >
           <span>←</span>
-          <span>Volver a ver rendiciones</span>
+          <span>
+            {isPagador ? "Volver a rendiciones del empleado" : "Volver a ver rendiciones"}
+          </span>
         </Link>
         <h1 className="page-title mt-1">
           {report.title ?? (
