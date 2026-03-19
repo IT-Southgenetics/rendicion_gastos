@@ -45,7 +45,59 @@ La aplicación está centrada en el **ciclo de vida de los gastos**:
    - `react-hot-toast` se usa para mostrar feedback rápido (éxito, error, validaciones).
 
 ---
+## Flujo de rendiciones y roles (Aprobador / Pagador / Chusma)
 
+La app maneja un flujo por **rendición (weekly_reports)**, con estados en `workflow_status`:
+
+- `draft` (borrador)
+- `submitted` (enviada al aprobador)
+- `needs_correction` (devuelta para correcciones)
+- `approved` (cerrada / aprobada)
+- `paid` (pagada)
+
+Roles principales (campo `public.profiles.role`):
+
+- `admin`: acceso total y visibilidad global
+- `aprobador`: aprueba rendiciones y revisa gastos
+- `pagador`: marca rendiciones como `paid` y carga comprobante
+- `chusmas` (chusma): auditoría solo lectura
+
+Auditoría (chusma):
+- URL: `/dashboard/chusma-view`
+- Filtros por querystring: `status`, `country`, `employee`, `approver`, `from`, `to`
+- Implementación: `src/app/(dashboard)/chusma-view/page.tsx` + `src/components/chusma/ChusmaFilters.tsx`
+
+---
+## Excel y webhooks n8n (Base64 adjunto)
+
+La app genera Excel (XLSX) mediante `src/lib/excelGenerator.ts`.
+
+En webhooks de:
+- **rendición aprobada** (`approveReportAction.ts`)
+- **rendición pagada** (`payReportAction.ts`)
+
+el backend incluye:
+- `excelBase64`
+- `excelName`
+
+---
+## Integración contable Odoo (sync)
+
+Se agregó:
+- Nuevo campo: `weekly_reports.odoo_move_id` (nullable)
+- Migración SQL: `supabase/migrations/20260319_add_odoo_move_id_to_weekly_reports.sql`
+- Endpoint para n8n (sin sesión): `PUT /api/reports/[id]/odoo-sync`
+  - Implementación: `src/app/api/reports/[id]/odoo-sync/route.ts`
+  - Requiere `SUPABASE_SERVICE_ROLE_KEY` en entorno.
+
+---
+## Webhook factura (OCR/lectura ticket)
+
+Webhook `https://n8n.srv908725.hstgr.cloud/webhook/factura` se dispara al crear un **nuevo gasto**:
+- Utilidad: `src/lib/n8n/sendExpenseWebhook.ts`
+- Disparo: `src/components/expenses/NewExpenseForm.tsx` (luego del INSERT exitoso)
+
+---
 ## Arquitectura técnica (alto nivel)
 
 - **Estructura de Next.js**  
@@ -86,6 +138,7 @@ Cuando otra IA vaya a trabajar sobre este proyecto, es útil que asuma lo siguie
 4. **Persistencia y seguridad**  
    - Todos los datos “serios” viven en Supabase (base de datos + auth).  
    - Es importante no exponer claves privadas ni lógica sensible en el cliente.
+   - Nota sobre RLS/policies: evitar escribir policies de `public.profiles` que consulten `profiles` dentro del `USING`, ya que eso puede disparar errores como `infinite recursion detected in policy for relation "profiles"`.
 
 5. **Internacionalización / idioma**  
    - El proyecto y el dominio están orientados al contexto hispanohablante (por ejemplo, nombres como `rendicion_gastos`, posibles textos en español).
