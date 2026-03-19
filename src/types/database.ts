@@ -363,6 +363,7 @@ export type Database = {
           title: string | null
           status: Database["public"]["Enums"]["report_status"]
           total_amount: number | null
+          odoo_move_id: number | null
           updated_at: string | null
           user_id: string
           week_end: string
@@ -384,6 +385,7 @@ export type Database = {
           title?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           total_amount?: number | null
+          odoo_move_id?: number | null
           updated_at?: string | null
           user_id: string
           week_end: string
@@ -405,6 +407,7 @@ export type Database = {
           title?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           total_amount?: number | null
+          odoo_move_id?: number | null
           updated_at?: string | null
           user_id?: string
           week_end?: string

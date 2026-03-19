@@ -24,7 +24,7 @@ export async function approveReportAction(formData: FormData) {
     await Promise.all([
       supabase
         .from("weekly_reports")
-        .select("id, user_id, title")
+        .select("id, user_id, title, total_amount")
         .eq("id", reportId)
         .single(),
       supabase
@@ -54,7 +54,7 @@ export async function approveReportAction(formData: FormData) {
 
   const { data: employeeData, error: ownerError } = await supabase
     .from("profiles")
-    .select("full_name, email")
+    .select("full_name, email, country")
     .eq("id", report.user_id)
     .single();
 
@@ -121,6 +121,8 @@ export async function approveReportAction(formData: FormData) {
         reportId: reportId,
         reportTitle: report?.title ?? "",
         employeeName: employeeData?.full_name || "Empleado",
+        country: employeeData?.country ?? "",
+        amount: report?.total_amount ?? 0,
         employeeEmail,
         pagadorEmails,
         // Compatibilidad con flujos n8n antiguos

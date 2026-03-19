@@ -23,7 +23,7 @@ export async function submitReportAction(formData: FormData) {
   // Asegurar que la rendición pertenece al usuario
   const { data: report, error: reportError } = await supabase
     .from("weekly_reports")
-    .select("id, user_id")
+    .select("id, user_id, workflow_status")
     .eq("id", reportId)
     .single();
 
@@ -41,8 +41,18 @@ export async function submitReportAction(formData: FormData) {
     throw new Error("No se pudo enviar la rendición.");
   }
 
-  // Notificación a n8n de nueva rendición
-  const webhookUrl = process.env.N8N_WEBHOOK_URL_NUEVA_RENDICION;
+  const previousWorkflowStatus = (report.workflow_status ?? "draft") as
+    | "draft"
+    | "submitted"
+    | "needs_correction"
+    | "approved"
+    | "paid";
+  const isResubmission = previousWorkflowStatus === "needs_correction";
+
+  // Webhook de cierre inicial vs reenvío corregido
+  const webhookUrl = isResubmission
+    ? process.env.N8N_WEBHOOK_URL_RENDICION_CORREGIDA
+    : process.env.N8N_WEBHOOK_URL_NUEVA_RENDICION;
   if (webhookUrl) {
     const [{ data: employee }, { data: assignments }] = await Promise.all([
       supabase
@@ -79,13 +89,18 @@ export async function submitReportAction(formData: FormData) {
       employeeName: employee?.full_name ?? "",
       employeeEmail: employee?.email ?? "",
       supervisorEmails,
+      previousWorkflowStatus,
+      isResubmission,
       // Compatibilidad con flujos n8n antiguos
       targetEmails: supervisorEmails,
       excelBase64,
       excelName,
     };
 
-    console.log("Payload hacia n8n (nueva rendición):", payload);
+    console.log(
+      `Payload hacia n8n (${isResubmission ? "rendición corregida" : "nueva rendición"}):`,
+      payload,
+    );
 
     try {
       const response = await fetch(webhookUrl as string, {
@@ -93,12 +108,21 @@ export async function submitReportAction(formData: FormData) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      console.log("Status de n8n (nueva rendición):", response.status);
+      console.log(
+        `Status de n8n (${isResubmission ? "rendición corregida" : "nueva rendición"}):`,
+        response.status,
+      );
       if (!response.ok) {
-        console.error("Error devuelto por n8n (nueva rendición):", await response.text());
+        console.error(
+          `Error devuelto por n8n (${isResubmission ? "rendición corregida" : "nueva rendición"}):`,
+          await response.text(),
+        );
       }
     } catch (error) {
-      console.error("Error enviando webhook de nueva rendición a N8N:", error);
+      console.error(
+        `Error enviando webhook de ${isResubmission ? "rendición corregida" : "nueva rendición"} a N8N:`,
+        error,
+      );
     }
   }
 
