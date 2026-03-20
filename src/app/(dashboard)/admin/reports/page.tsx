@@ -52,10 +52,11 @@ export default async function AdminReportsPage({
           </p>
         </div>
         <Link
-          href="/dashboard/admin"
-          className="text-sm font-medium text-[var(--color-primary)]"
+          href="/admin"
+          className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.75rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
         >
-          ← Panel admin
+          <span>←</span>
+          <span>Volver al panel admin</span>
         </Link>
       </div>
 

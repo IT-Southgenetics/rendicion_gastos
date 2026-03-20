@@ -52,6 +52,7 @@ export default async function AprobadorEmployeeDetailPage({ params }: Props) {
     .from("weekly_reports")
     .select("id, title, week_start, week_end, status, workflow_status, budget_max, expenses(id, status)")
     .eq("user_id", employeeId)
+    .in("workflow_status", ["submitted", "needs_correction", "approved", "paid"])
     .order("created_at", { ascending: false });
 
   const reportList =

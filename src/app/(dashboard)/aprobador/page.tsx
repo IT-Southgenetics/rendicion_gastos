@@ -48,8 +48,9 @@ export default async function AprobadorHomePage() {
   const employeeIds = employees.map((e) => e.id);
   const { data: reports } = await supabase
     .from("weekly_reports")
-    .select("id, title, week_start, week_end, status, user_id, budget_max, expenses(id, status)")
+    .select("id, title, week_start, week_end, status, workflow_status, user_id, budget_max, expenses(id, status)")
     .in("user_id", employeeIds)
+    .in("workflow_status", ["submitted", "needs_correction", "approved", "paid"])
     .order("created_at", { ascending: false });
 
   // Group reports by employee
@@ -71,11 +72,14 @@ export default async function AprobadorHomePage() {
       <div className="grid gap-4 sm:grid-cols-2">
         {employees.map((emp) => {
           const empReports = reportsByEmployee[emp.id] ?? [];
-          const openReports = empReports.filter((r) => r.status === "open").length;
-          const pendingExpenses = empReports.flatMap((r) =>
-            (r.expenses as Array<{ id: string; status: string | null }> ?? [])
-              .filter((e) => e.status === "pending")
+          const paidReports = empReports.filter((r) => (r as any).workflow_status === "paid").length;
+          const approvedReports = empReports.filter(
+            (r) => (r as any).workflow_status === "approved",
           ).length;
+          const pendingReports = empReports.filter((r) => {
+            const ws = ((r as any).workflow_status ?? "draft") as string;
+            return ws === "submitted" || ws === "needs_correction";
+          }).length;
 
           return (
             <Link
@@ -101,17 +105,17 @@ export default async function AprobadorHomePage() {
 
               {/* Quick stats */}
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg bg-[#f5f1f8] p-2">
-                  <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Rendiciones</p>
-                  <p className="text-base font-bold text-[var(--color-text-primary)]">{empReports.length}</p>
+                <div className="rounded-lg bg-blue-50 p-2">
+                  <p className="text-[0.6rem] font-semibold uppercase text-blue-600">Pagadas</p>
+                  <p className="text-base font-bold text-blue-700">{paidReports}</p>
                 </div>
                 <div className="rounded-lg bg-emerald-50 p-2">
-                  <p className="text-[0.6rem] font-semibold uppercase text-emerald-600">Abiertas</p>
-                  <p className="text-base font-bold text-emerald-700">{openReports}</p>
+                  <p className="text-[0.6rem] font-semibold uppercase text-emerald-600">Cerradas / Aprobadas</p>
+                  <p className="text-base font-bold text-emerald-700">{approvedReports}</p>
                 </div>
                 <div className="rounded-lg bg-amber-50 p-2">
                   <p className="text-[0.6rem] font-semibold uppercase text-amber-600">Pendientes</p>
-                  <p className="text-base font-bold text-amber-700">{pendingExpenses}</p>
+                  <p className="text-base font-bold text-amber-700">{pendingReports}</p>
                 </div>
               </div>
 
@@ -122,7 +126,7 @@ export default async function AprobadorHomePage() {
                     Rendiciones recientes
                   </p>
                   <p className="text-[0.65rem] text-[var(--color-text-muted)]">
-                    {empReports.length} en total, {openReports} abiertas, {pendingExpenses} gastos pendientes.
+                    Total de rendiciones: {empReports.length}. Pagadas: {paidReports}, cerradas/aprobadas: {approvedReports}, pendientes: {pendingReports}.
                   </p>
                 </div>
               )}

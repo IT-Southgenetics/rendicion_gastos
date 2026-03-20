@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
@@ -139,9 +140,18 @@ export default async function AdminUsersPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="page-title">Gestión de usuarios</h1>
-        <p className="page-subtitle">Administrá roles y asignaciones de aprobación.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="page-title">Gestión de usuarios</h1>
+          <p className="page-subtitle">Administrá roles y asignaciones de aprobación.</p>
+        </div>
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.75rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
+        >
+          <span>←</span>
+          <span>Volver al panel admin</span>
+        </Link>
       </div>
 
       <Suspense fallback={null}>

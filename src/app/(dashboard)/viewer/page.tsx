@@ -139,12 +139,14 @@ export default async function ViewerHomePage() {
           if (isPagador && empReports.length === 0) {
             return null;
           }
-          const openReports = empReports.filter((r) => r.status === "open").length;
-          const pendingExpenses = empReports.flatMap((r) =>
-            (r.expenses as Array<{ id: string; status: string | null }> ?? []).filter(
-              (e) => e.status === "pending",
-            ),
+          const paidReports = empReports.filter((r) => (r as any).workflow_status === "paid").length;
+          const approvedReports = empReports.filter(
+            (r) => (r as any).workflow_status === "approved",
           ).length;
+          const pendingReports = empReports.filter((r) => {
+            const ws = ((r as any).workflow_status ?? "draft") as string;
+            return ws === "submitted" || ws === "needs_correction";
+          }).length;
 
           return (
             <Link
@@ -172,25 +174,21 @@ export default async function ViewerHomePage() {
 
               {/* Quick stats */}
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg bg-[#f5f1f8] p-2">
-                  <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">
-                    Rendiciones
-                  </p>
-                  <p className="text-base font-bold text-[var(--color-text-primary)]">
-                    {empReports.length}
-                  </p>
+                <div className="rounded-lg bg-blue-50 p-2">
+                  <p className="text-[0.6rem] font-semibold uppercase text-blue-600">Pagadas</p>
+                  <p className="text-base font-bold text-blue-700">{paidReports}</p>
                 </div>
                 <div className="rounded-lg bg-emerald-50 p-2">
                   <p className="text-[0.6rem] font-semibold uppercase text-emerald-600">
-                    Abiertas
+                    Cerradas / Aprobadas
                   </p>
-                  <p className="text-base font-bold text-emerald-700">{openReports}</p>
+                  <p className="text-base font-bold text-emerald-700">{approvedReports}</p>
                 </div>
                 <div className="rounded-lg bg-amber-50 p-2">
                   <p className="text-[0.6rem] font-semibold uppercase text-amber-600">
                     Pendientes
                   </p>
-                  <p className="text-base font-bold text-amber-700">{pendingExpenses}</p>
+                  <p className="text-base font-bold text-amber-700">{pendingReports}</p>
                 </div>
               </div>
 
@@ -199,6 +197,9 @@ export default async function ViewerHomePage() {
                 <div className="space-y-1.5">
                   <p className="text-[0.65rem] font-semibold uppercase text-[var(--color-text-muted)]">
                     Rendiciones recientes
+                  </p>
+                  <p className="text-[0.65rem] text-[var(--color-text-muted)]">
+                    Total de rendiciones: {empReports.length}. Pagadas: {paidReports}, cerradas/aprobadas: {approvedReports}, pendientes: {pendingReports}.
                   </p>
                   {empReports.slice(0, 3).map((r) => {
                     const startDate = new Date(r.week_start + "T12:00:00").toLocaleDateString(
