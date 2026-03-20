@@ -265,6 +265,19 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                         <p className="text-xs text-blue-700">{expense.admin_notes}</p>
                       </div>
                     )}
+
+                    {/* Acción "Corregir" visible también en mobile */}
+                    {canEmployeeEditReport &&
+                      (expense.status === "reviewing" || expense.status === "rejected") && (
+                        <div className="mx-4 mb-3 mt-1">
+                          <Link
+                            href={`/dashboard/expenses/${expense.id}/edit`}
+                            className="inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold text-amber-600 hover:underline"
+                          >
+                            Corregir
+                          </Link>
+                        </div>
+                      )}
                   </div>
                 );
               })}
