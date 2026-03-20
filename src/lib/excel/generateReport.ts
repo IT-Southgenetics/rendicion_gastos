@@ -109,7 +109,18 @@ export function generateReportWorkbook(args: {
   // ── Totales ───────────────────────────────────────────────
   rows.push([]);
 
-  // Total por moneda original
+  const currenciesInReport = Object.keys(totalsByCurrency);
+  const hasMultipleCurrencies = currenciesInReport.length > 1;
+
+  // Si hay múltiples monedas, dejamos una aclaración explícita para evitar
+  // interpretar un "total general" sumando montos de monedas distintas.
+  if (hasMultipleCurrencies) {
+    rows.push([
+      "Nota: no se suman montos de diferentes monedas en un único total original.",
+    ]);
+  }
+
+  // Subtotales por moneda original
   for (const [currency, total] of Object.entries(totalsByCurrency)) {
     const row: any[] = ["", "", "", `TOTAL ${currency}`, Number(total.toFixed(2)), currency];
     if (hasRates) row.push("");
@@ -117,7 +128,7 @@ export function generateReportWorkbook(args: {
     rows.push(row);
   }
 
-  // Total en USD (si hay tipo de cambio para todas las monedas)
+  // Total unificado en USD (si hay tipo de cambio para todas las monedas)
   if (hasRates && allConvertible && expenses.length > 0) {
     const row: any[] = ["", "", "", "TOTAL USD", "", ""];
     row.push(Number(totalUSD.toFixed(2)));

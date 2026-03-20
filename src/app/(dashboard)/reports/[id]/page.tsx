@@ -243,8 +243,11 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
               <p className="mt-0.5">{r.payment_destination || "—"}</p>
             </div>
           </div>
-          {r.payment_receipt_url && (
-            <div className="pt-1">
+          <div className="pt-1">
+            <p className="text-[0.65rem] uppercase text-[var(--color-text-muted)]">
+              Comprobante
+            </p>
+            {r.payment_receipt_url ? (
               <a
                 href={r.payment_receipt_url}
                 target="_blank"
@@ -253,8 +256,12 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
               >
                 Ver comprobante ↗
               </a>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-amber-700">
+                Esta rendición figura como pagada, pero no tiene comprobante cargado.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
