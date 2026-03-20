@@ -1,5 +1,6 @@
 'use client';
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { X, Plus } from "lucide-react";
@@ -32,6 +33,7 @@ export function SupervisionAssigner({
   availableEmployees,
 }: Props) {
   const supabase = createSupabaseBrowserClient();
+  const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
   const [adding, setAdding]           = useState(false);
   const [saving, setSaving]           = useState(false);
@@ -53,6 +55,7 @@ export function SupervisionAssigner({
     }
     setAssignments((prev) => [...prev, { id: data.id, employee_id: emp.id, employee: emp }]);
     toast.success(`${emp.full_name} asignado a ${supervisorName} (aprobador)`);
+    router.refresh();
     setAdding(false);
   }
 
@@ -69,6 +72,7 @@ export function SupervisionAssigner({
     }
     setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
     toast.success(`${empName} quitado de la supervisión`);
+    router.refresh();
   }
 
   return (

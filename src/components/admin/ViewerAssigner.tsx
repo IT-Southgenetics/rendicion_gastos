@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { X, Plus } from 'lucide-react';
@@ -35,6 +36,7 @@ export function ViewerAssigner({
   assignedByUserId,
 }: Props) {
   const supabase = createSupabaseBrowserClient();
+  const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -60,6 +62,7 @@ export function ViewerAssigner({
     }
     setAssignments((prev) => [...prev, { id: data.id, employee_id: emp.id, employee: emp }]);
     toast.success(`${emp.full_name} asignado a ${viewerName}`);
+    router.refresh();
     setAdding(false);
   }
 
@@ -76,6 +79,7 @@ export function ViewerAssigner({
     }
     setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
     toast.success(`${empName} quitado de las vistas del chusmas`);
+    router.refresh();
   }
 
   return (

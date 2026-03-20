@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useActionState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { CreditCard, X } from "lucide-react";
 import { payReportAction, type PayReportState } from "@/actions/payReportAction";
@@ -27,6 +28,7 @@ export function PayReportModal({
   reportId: string;
   suggestedAmount?: number | null;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState<PayReportState | null, FormData>(
     payReportAction,
@@ -49,6 +51,7 @@ export function PayReportModal({
     if (state.ok) {
       toast.success("Rendición marcada como pagada.");
       setOpen(false);
+      router.refresh();
     } else {
       toast.error(state.error || "No se pudo marcar la rendición como pagada.");
     }

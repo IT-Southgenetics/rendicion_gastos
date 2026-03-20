@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
+import { WeeklyReportsRealtimeRefresher } from "@/components/realtime/WeeklyReportsRealtimeRefresher";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServerClient();
@@ -30,6 +31,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <div className="flex min-h-screen flex-1 flex-col bg-[var(--color-bg)] pb-14 md:pb-0">
         <Header />
         <main className="flex-1 px-4 py-4 md:px-6 md:py-6">
+          <WeeklyReportsRealtimeRefresher />
           {children}
         </main>
         <MobileNav isAdmin={isAdmin} isSupervisor={isSupervisor} isViewer={isViewer} isPagador={isPagador} />

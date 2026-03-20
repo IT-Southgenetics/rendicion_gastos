@@ -1,5 +1,6 @@
 'use client';
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -50,6 +51,7 @@ interface Props {
 
 export function UserRoleEditor({ userId, currentRole, currentUserId }: Props) {
   const supabase  = createSupabaseBrowserClient();
+  const router = useRouter();
   const [role, setRole]       = useState<UserRole>(currentRole);
   const [saving, setSaving]   = useState(false);
   const [editing, setEditing] = useState(false);
@@ -84,6 +86,7 @@ export function UserRoleEditor({ userId, currentRole, currentUserId }: Props) {
     } else {
       setRole(newRole);
       toast.success(`Rol actualizado a ${ROLE_LABELS[newRole]}`);
+      router.refresh();
     }
     setEditing(false);
   }

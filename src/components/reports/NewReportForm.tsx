@@ -98,6 +98,7 @@ export function NewReportForm() {
 
     toast.success("Rendición creada. ¡Ahora agregá los gastos!");
     router.push(`/dashboard/reports/${report.id}`);
+    router.refresh();
   }
 
   return (

@@ -145,7 +145,14 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
     // Nota: ya no se envían webhooks por gasto individual.
 
     toast.success("Gasto actualizado correctamente.");
-    router.push(`/dashboard/expenses/${expense.id}`);
+    if (canResubmit) {
+      const reportTarget = expense.report_id
+        ? `/dashboard/reports/${expense.report_id}`
+        : "/dashboard/reports";
+      router.push(reportTarget);
+    } else {
+      router.push(`/dashboard/expenses/${expense.id}`);
+    }
     router.refresh();
   }
 

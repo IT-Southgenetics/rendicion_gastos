@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -21,6 +22,7 @@ const CURRENCY_LABELS: Record<string, string> = {
 
 export function ExchangeRateEditor({ reportId, currencies, savedRates, globalPresets }: ExchangeRateEditorProps) {
   const supabase = createSupabaseBrowserClient();
+  const router = useRouter();
 
   const [rates, setRates] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -58,6 +60,7 @@ export function ExchangeRateEditor({ reportId, currencies, savedRates, globalPre
       return;
     }
     toast.success("Tipos de cambio guardados.");
+    router.refresh();
   }
 
   return (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -18,6 +19,7 @@ interface GlobalExchangeRateEditorProps {
 
 export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEditorProps) {
   const supabase = createSupabaseBrowserClient();
+  const router = useRouter();
 
   const [rates, setRates] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -59,6 +61,7 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
       return;
     }
     toast.success("Tipos de cambio globales actualizados.");
+    router.refresh();
   }
 
   return (

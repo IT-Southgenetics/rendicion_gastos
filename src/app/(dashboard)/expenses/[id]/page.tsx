@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import { SupervisorExpenseActions } from "@/components/expenses/SupervisorExpenseActions";
@@ -283,6 +284,12 @@ async function updateExpenseStatusAction(
   }
 
   // Nota: ya no se envían webhooks por gasto individual (aprobación/rechazo/revisión).
+  // Fuerza a Next.js a re-renderizar Server Components con datos frescos.
+  revalidatePath("/dashboard/expenses");
+  revalidatePath(`/dashboard/expenses/${expenseId}`);
+  if (expense.report_id) {
+    revalidatePath(`/dashboard/reports/${expense.report_id}`);
+  }
 
   return { ok: true };
 }

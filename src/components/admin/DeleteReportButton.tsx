@@ -31,6 +31,7 @@ export function DeleteReportButton({ reportId, reportTitle, expenseCount }: Dele
 
     toast.success("Rendición eliminada.");
     router.push("/dashboard/admin/reports");
+    router.refresh();
   }
 
   if (confirming) {
