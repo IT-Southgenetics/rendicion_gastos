@@ -209,6 +209,55 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
         }))}
       />
 
+      {/* Información de pago visible para el empleado cuando ya está pagada */}
+      {workflowStatus === "paid" && (
+        <div className="card p-4 space-y-2">
+          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+            Información de pago
+          </h2>
+          <div className="grid gap-2 text-xs text-[var(--color-text-primary)] sm:grid-cols-3">
+            <div>
+              <p className="text-[0.65rem] uppercase text-[var(--color-text-muted)]">
+                Pagado el
+              </p>
+              <p className="mt-0.5">
+                {r.payment_date
+                  ? new Date(r.payment_date + "T12:00:00").toLocaleDateString("es-UY")
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[0.65rem] uppercase text-[var(--color-text-muted)]">
+                Monto pagado
+              </p>
+              <p className="mt-0.5">
+                {typeof r.amount_paid === "number"
+                  ? `USD ${fmt(Number(r.amount_paid))}`
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[0.65rem] uppercase text-[var(--color-text-muted)]">
+                Destino
+              </p>
+              <p className="mt-0.5">{r.payment_destination || "—"}</p>
+            </div>
+          </div>
+          {r.payment_receipt_url && (
+            <div className="pt-1">
+              <a
+                href={r.payment_receipt_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:underline"
+              >
+                Ver comprobante ↗
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Lista de gastos */}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-[#f0ecf4] px-4 py-3">
