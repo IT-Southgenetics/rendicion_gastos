@@ -135,7 +135,7 @@ export async function payReportAction(
     const { data: chusmasData } = await supabase
       .from("profiles")
       .select("email")
-      .in("role", ["chusmas", "chusma"]);
+      .eq("role", "chusmas");
 
     const chusmaEmails = (chusmasData ?? [])
       .map((p) => p.email)
