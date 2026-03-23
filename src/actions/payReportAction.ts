@@ -103,7 +103,7 @@ export async function payReportAction(
 
   const { data: reportData } = await supabase
     .from("weekly_reports")
-    .select("user_id")
+    .select("user_id, odoo_move_id")
     .eq("id", reportId)
     .single();
 
@@ -131,6 +131,17 @@ export async function payReportAction(
       .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
       .join(",");
 
+    // Correos de usuarios auditor/chusma
+    const { data: chusmasData } = await supabase
+      .from("profiles")
+      .select("email")
+      .in("role", ["chusmas", "chusma"]);
+
+    const chusmaEmails = (chusmasData ?? [])
+      .map((p) => p.email)
+      .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
+      .join(",");
+
     // Emails de aprobadores asignados al empleado (pueden ser varios)
     let aprobadorEmails = "";
     if (reportData?.user_id) {
@@ -154,7 +165,12 @@ export async function payReportAction(
 
     const targetEmails = Array.from(
       new Set(
-        [employeeEmail, ...pagadorEmails.split(","), ...aprobadorEmails.split(",")]
+        [
+          employeeEmail,
+          ...pagadorEmails.split(","),
+          ...aprobadorEmails.split(","),
+          ...chusmaEmails.split(","),
+        ]
           .map((e) => e.trim())
           .filter(Boolean),
       ),
@@ -176,6 +192,8 @@ export async function payReportAction(
         employeeEmail,
         pagadorEmails,
         aprobadorEmails,
+        chusmaEmails,
+        odooMoveId: reportData?.odoo_move_id ?? null,
         targetEmails,
       });
       const response = await fetch(webhookUrl as string, {
@@ -191,6 +209,8 @@ export async function payReportAction(
           employeeName,
           pagadorEmails,
           aprobadorEmails,
+          chusmaEmails,
+          odooMoveId: reportData?.odoo_move_id ?? null,
           // Compatibilidad con flujos n8n antiguos
           targetEmails,
           excelBase64,

@@ -117,12 +117,15 @@ export async function approveReportAction(formData: FormData) {
         console.error("No se pudo generar Excel para webhook (rendición aprobada):", e);
       }
 
+      const closedAtIso = new Date().toISOString();
       const payload = {
         reportId: reportId,
         reportTitle: report?.title ?? "",
         employeeName: employeeData?.full_name || "Empleado",
         country: employeeData?.country ?? "",
         amount: report?.total_amount ?? 0,
+        closingDate: closedAtIso.slice(0, 10),
+        closedAt: closedAtIso,
         employeeEmail,
         pagadorEmails,
         // Compatibilidad con flujos n8n antiguos
