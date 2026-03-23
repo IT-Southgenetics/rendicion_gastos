@@ -112,6 +112,7 @@ export function generateReportWorkbook(args: {
   for (const e of expenses) {
     const amount   = Number(e.amount ?? 0);
     const currency = e.currency ?? "UYU";
+    const usd = toUSD(amount, currency, exchangeRates);
 
     totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0) + amount;
 
