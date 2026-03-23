@@ -161,12 +161,20 @@ export function SupervisorExpenseActions({
                 <Dialog.Description className="text-xs text-[var(--color-text-muted)]">
                   Escribí un comentario claro para que el empleado entienda qué debe corregir o por qué se rechaza el gasto.
                 </Dialog.Description>
+                <p className="text-[0.7rem] text-[var(--color-text-muted)]">
+                  Los campos con <span className="font-semibold text-red-500">(*)</span> son obligatorios.
+                </p>
 
+                <label className="block text-xs font-semibold text-[var(--color-text-primary)]">
+                  Motivo / explicación{" "}
+                  <span className="text-red-500">(*)</span>
+                </label>
                 <textarea
                   className="input min-h-[96px] text-xs"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   maxLength={400}
+                  required
                   placeholder={
                     pendingAction === "reject"
                       ? "Explicá por qué se rechaza este gasto..."

@@ -386,6 +386,11 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
                             Nota: {expense.admin_notes}
                           </p>
                         )}
+                        {expense.employee_response && (
+                          <p className="rounded-lg bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
+                            Respuesta del rendidor: {expense.employee_response}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

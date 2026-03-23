@@ -148,6 +148,12 @@ export default async function ExpenseDetailPage({ params, searchParams }: Expens
               <p className="text-sm text-blue-700">{e.admin_notes}</p>
             </div>
           )}
+          {e.employee_response && (
+            <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2.5">
+              <p className="text-xs font-semibold text-emerald-600 mb-1">Respuesta del rendidor</p>
+              <p className="text-sm text-emerald-700">{e.employee_response}</p>
+            </div>
+          )}
         </div>
 
         {/* Comprobante(s) */}

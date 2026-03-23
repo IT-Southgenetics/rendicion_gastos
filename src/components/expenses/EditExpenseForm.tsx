@@ -70,6 +70,10 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
       toast.error("El monto debe ser un número válido.");
       return false;
     }
+    if (canResubmit && !employeeResponse.trim()) {
+      toast.error("La respuesta / explicación es obligatoria para reenviar.");
+      return false;
+    }
     return true;
   }
 
@@ -323,8 +327,11 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
 
       {canResubmit && !isLocked && (
         <div className="space-y-2">
+          <p className="text-[0.7rem] text-[var(--color-text-muted)]">
+            Los campos con <span className="font-semibold text-red-500">(*)</span> son obligatorios.
+          </p>
           <label className="block text-sm font-semibold text-[var(--color-text-primary)]">
-            Tu respuesta / explicación (opcional)
+            Tu respuesta / explicación <span className="text-red-500">(*)</span>
           </label>
           <textarea
             className="input min-h-[80px] text-sm"
@@ -333,6 +340,7 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
             maxLength={500}
             placeholder="Explicá qué cambiaste o por qué considerás válido este gasto…"
             disabled={isLocked}
+            required
           />
           <p className="text-[0.7rem] text-right text-[var(--color-text-muted)]">
             {employeeResponse.length}/500

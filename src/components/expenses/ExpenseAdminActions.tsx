@@ -23,8 +23,8 @@ export function ExpenseAdminActions({ expenseId, currentStatus }: ExpenseAdminAc
   const isFinal = currentStatus === "approved" || currentStatus === "rejected";
 
   async function applyAction(action: Action) {
-    if (action === "reject" && !note.trim()) {
-      toast.error("Ingresá el motivo de rechazo.");
+    if ((action === "reject" || action === "reviewing") && !note.trim()) {
+      toast.error("Ingresá el motivo / explicación obligatoria.");
       return;
     }
 
@@ -74,12 +74,19 @@ export function ExpenseAdminActions({ expenseId, currentStatus }: ExpenseAdminAc
     const isReject = pendingAction === "reject";
     return (
       <div className="flex flex-col gap-2 min-w-[220px]">
+        <p className="text-[0.7rem] text-[var(--color-text-muted)]">
+          Los campos con <span className="font-semibold text-red-500">(*)</span> son obligatorios.
+        </p>
+        <label className="text-xs font-semibold text-[var(--color-text-primary)]">
+          Motivo / explicación <span className="text-red-500">(*)</span>
+        </label>
         <textarea
           className="input min-h-[60px] text-xs"
-          placeholder={isReject ? "Motivo de rechazo (obligatorio)..." : "Comentario para el empleado (opcional)..."}
+          placeholder={isReject ? "Motivo de rechazo..." : "Comentario para el empleado..."}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           maxLength={400}
+          required
           autoFocus
         />
         <div className="flex gap-2">
