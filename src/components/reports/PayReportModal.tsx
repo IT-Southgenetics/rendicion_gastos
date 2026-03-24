@@ -114,13 +114,13 @@ export function PayReportModal({
 
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-[var(--color-text-primary)]">
-                  Destino del pago
+                  Método de pago
                 </label>
                 <input
                   type="text"
                   name="paymentDestination"
                   required
-                  placeholder='Ej: "Banco ITAU", "Efectivo"...'
+                  placeholder='Ej: transferencia, efectivo, tarjeta…'
                   className="input text-xs"
                 />
               </div>

@@ -197,7 +197,7 @@ export default async function ViewerReportDetailPage({ params }: Props) {
             </div>
             <div>
               <p className="text-[0.65rem] uppercase text-[var(--color-text-muted)]">
-                Destino
+                Método de pago
               </p>
               <p className="mt-0.5">{report.payment_destination || "—"}</p>
             </div>
