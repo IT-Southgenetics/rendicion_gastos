@@ -35,7 +35,7 @@ export async function generateExcelExport(reportId: string): Promise<{
   const { data: expenses, error: expensesError } = await supabase
     .from("expenses")
     .select(
-      "expense_date, category, description, amount, currency, status, ticket_url, rejection_reason",
+      "expense_date, category, description, merchant_name, amount, currency, status, ticket_url, rejection_reason",
     )
     .eq("report_id", reportId)
     .order("expense_date", { ascending: true });
