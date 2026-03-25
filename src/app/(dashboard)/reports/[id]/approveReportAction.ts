@@ -82,6 +82,35 @@ export async function approveReportAction(formData: FormData) {
     process.env.N8N_WEBHOOK_URL_APROBAR_CIERRE ??
     process.env.N8N_WEBHOOK_URL_RENDICION_APROBADA;
   if (webhookUrl) {
+    // Obtener usuarios chusmas (auditor?a) para copiar en la notificaci?n
+    const { data: chusmasData, error: chusmasError } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("role", "chusmas");
+
+    if (chusmasError) {
+      console.error(
+        "No se pudieron obtener usuarios chusmas para la notificaci?n de rendici?n aprobada:",
+        chusmasError,
+      );
+    }
+
+    const chusmaEmailsList = Array.from(
+      new Set(
+        (chusmasData ?? [])
+          .map((c) => c.email)
+          .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
+          .map((e) => e.trim().toLowerCase()),
+      ),
+    );
+    const defaultChusmaEmail = (process.env.N8N_DEFAULT_CHUSMA_EMAIL ?? "").trim().toLowerCase();
+    const effectiveChusmaEmailsList =
+      chusmaEmailsList.length > 0
+        ? chusmaEmailsList
+        : (defaultChusmaEmail ? [defaultChusmaEmail] : []);
+
+    const chusmaEmails = effectiveChusmaEmailsList.join(",");
+
     // Obtener todos los usuarios con rol "pagador"
     const { data: payers, error: payersError } = await supabase
       .from("profiles")
@@ -163,6 +192,7 @@ export async function approveReportAction(formData: FormData) {
         employeeEmail,
         pagadorEmails,
         pagadorEmailList: payerEmailArray,
+        ...(chusmaEmails ? { chusmaEmails, chusmaEmailList: effectiveChusmaEmailsList } : {}),
         // Compatibilidad con flujos n8n antiguos
         targetEmails,
         excelBase64,
