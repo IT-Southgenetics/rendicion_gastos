@@ -5,21 +5,56 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
+function normalizeEmail(raw: string) {
+  return raw.trim().toLowerCase();
+}
+
+function isSouthGeneticsEmail(email: string) {
+  return email.endsWith("@southgenetics.com");
+}
+
+function friendlyAuthError(message: string) {
+  const m = (message || "").toLowerCase();
+  if (m.includes("user already registered")) return "Este email ya está registrado.";
+  if (m.includes("invalid email")) return "El email no es válido.";
+  if (m.includes("password should be at least")) return "La contraseña es muy corta (mínimo 6 caracteres).";
+  if (m.includes("signup is disabled")) return "El registro está deshabilitado.";
+  return message || "No se pudo crear la cuenta.";
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [country, setCountry] = useState("Uruguay");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFormError(null);
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!isSouthGeneticsEmail(normalizedEmail)) {
+      setFormError("Solo se permiten cuentas con email @southgenetics.com.");
+      return;
+    }
+    if (password.length < 6) {
+      setFormError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setFormError("Las contraseñas no coinciden.");
+      return;
+    }
+
     setLoading(true);
     const supabase = createSupabaseBrowserClient();
 
     const { error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: {
         data: {
@@ -32,7 +67,9 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (error) {
-      toast.error(error.message);
+      const msg = friendlyAuthError(error.message);
+      setFormError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -89,6 +126,19 @@ export default function RegisterPage() {
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-[var(--color-text-primary)]">
+              Confirmar contraseña
+            </label>
+            <input
+              type="password"
+              className="input"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--color-text-primary)]">
               País
             </label>
             <select
@@ -106,6 +156,11 @@ export default function RegisterPage() {
               <option value="Regional">Regional (otro)</option>
             </select>
           </div>
+          {formError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {formError}
+            </div>
+          )}
           <button
             type="submit"
             className="btn-primary w-full"

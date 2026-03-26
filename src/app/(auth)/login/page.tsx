@@ -6,6 +6,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
+function normalizeEmail(raw: string) {
+  return raw.trim().toLowerCase();
+}
+
+function isSouthGeneticsEmail(email: string) {
+  return email.endsWith("@southgenetics.com");
+}
+
+function friendlyAuthError(message: string) {
+  const m = (message || "").toLowerCase();
+  if (m.includes("invalid login credentials")) return "Email o contraseña incorrectos.";
+  if (m.includes("email not confirmed")) return "Tenés que confirmar tu email antes de ingresar.";
+  if (m.includes("invalid email")) return "El email no es válido.";
+  return message || "No se pudo iniciar sesión.";
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -14,18 +30,34 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFormError(null);
     setLoading(true);
     const supabase = createSupabaseBrowserClient();
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const normalizedEmail = normalizeEmail(email);
+    if (!isSouthGeneticsEmail(normalizedEmail)) {
+      setLoading(false);
+      const msg = "Solo se permite iniciar sesión con email @southgenetics.com.";
+      setFormError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
 
     setLoading(false);
 
     if (error) {
-      toast.error(error.message);
+      const msg = friendlyAuthError(error.message);
+      setFormError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -75,6 +107,11 @@ function LoginForm() {
       >
         {loading ? "Ingresando..." : "Ingresar"}
       </button>
+      {formError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {formError}
+        </div>
+      )}
     </form>
   );
 }
