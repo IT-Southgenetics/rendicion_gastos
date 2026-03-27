@@ -87,18 +87,31 @@ export default async function DashboardPage() {
       <div className="grid w-full max-w-full grid-cols-2 gap-2">
         <Link
           href="/dashboard/reports"
-          className="card flex min-w-0 flex-col items-center gap-1.5 px-2 py-3 text-center active:scale-[0.97] transition-transform"
+          className="card flex min-w-0 flex-col items-center gap-2 px-2 py-4 text-center transition-transform active:scale-[0.97]"
         >
-          <span className="text-xl">📋</span>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-primary)]" aria-hidden="true">
+              <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+              <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+              <path d="M10 18v-4" />
+              <path d="M14 18v-6" />
+            </svg>
+          </div>
           <span className="max-w-full truncate text-xs font-semibold text-[var(--color-text-primary)]">
             Rendiciones
           </span>
         </Link>
         <Link
           href="/dashboard/expenses"
-          className="card flex min-w-0 flex-col items-center gap-1.5 px-2 py-3 text-center active:scale-[0.97] transition-transform"
+          className="card flex min-w-0 flex-col items-center gap-2 px-2 py-4 text-center transition-transform active:scale-[0.97]"
         >
-          <span className="text-xl">🧾</span>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-secondary)]" aria-hidden="true">
+              <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+              <path d="M12 6.5v11" />
+              <path d="M15 9.4a3.5 3.5 0 1 0 0 5.2" />
+            </svg>
+          </div>
           <span className="max-w-full truncate text-xs font-semibold text-[var(--color-text-primary)]">
             Histórico
           </span>

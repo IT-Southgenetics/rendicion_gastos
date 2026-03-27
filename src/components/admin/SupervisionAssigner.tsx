@@ -125,7 +125,7 @@ export function SupervisionAssigner({
                   disabled={saving}
                   className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-white border border-transparent hover:border-[#e5e2ea] transition-colors"
                 >
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-xs font-bold text-[var(--color-primary)]">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-[var(--color-primary)]">
                     {u.full_name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">

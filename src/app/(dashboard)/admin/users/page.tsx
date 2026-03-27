@@ -139,19 +139,19 @@ export default async function AdminUsersPage({
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+    <div className="w-full max-w-full space-y-5">
+      <div className="space-y-3">
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.7rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
+        >
+          <span>←</span>
+          <span>Volver</span>
+        </Link>
+        <div className="min-w-0">
           <h1 className="page-title">Gestión de usuarios</h1>
           <p className="page-subtitle">Administrá roles y asignaciones de aprobación.</p>
         </div>
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.75rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
-        >
-          <span>←</span>
-          <span>Volver al panel admin</span>
-        </Link>
       </div>
 
       <Suspense fallback={null}>
@@ -159,8 +159,8 @@ export default async function AdminUsersPage({
       </Suspense>
 
       {/* Tabla de usuarios */}
-      <div className="card overflow-hidden">
-        <div className="border-b border-[#f0ecf4] px-4 py-3 flex items-center justify-between">
+      <div className="card w-full overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#f0ecf4] px-4 py-3 max-[430px]:px-3">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
             Usuarios ({userList.length})
           </h2>
@@ -187,7 +187,7 @@ export default async function AdminUsersPage({
                   <tr key={user.id} className="border-t border-[#f0ecf4] hover:bg-[#fdfbff] transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-xs font-bold text-[var(--color-primary)]">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-[var(--color-primary)]">
                           {user.full_name.charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -246,34 +246,39 @@ export default async function AdminUsersPage({
         </div>
 
         {/* Mobile cards */}
-        <div className="md:hidden divide-y divide-[#f0ecf4]">
+        <div className="divide-y divide-[#f0ecf4] md:hidden">
           {userList.map((user) => {
             const supervisorNames = supervisorsByEmployee[user.id] ?? [];
             return (
-              <div key={user.id} className="p-4 space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-sm font-bold text-[var(--color-primary)]">
+              <div key={user.id} className="w-full space-y-2 px-4 py-3 max-[430px]:px-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-[var(--color-primary)]">
                     {user.full_name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm text-[var(--color-text-primary)] truncate">{user.full_name}</p>
-                    <p className="text-[0.65rem] text-[var(--color-text-muted)] truncate">{user.email}</p>
-                  </div>
-                  <div className="relative">
-                    <UserRoleEditor
-                      userId={user.id}
-                      currentRole={user.role as any}
-                      currentUserId={session.user.id}
-                    />
+                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{user.full_name}</p>
+                    <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">{user.email}</p>
                   </div>
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <UserRoleEditor
+                    userId={user.id}
+                    currentRole={user.role as any}
+                    currentUserId={session.user.id}
+                  />
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[0.6rem] font-semibold ${
+                    user.is_active !== false ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+                  }`}>
+                    {user.is_active !== false ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
                 {(user as { country?: string }).country && (
-                  <p className="text-[0.65rem] text-[var(--color-text-muted)]">
+                  <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">
                     País: {(user as { country?: string }).country}
                   </p>
                 )}
                 {supervisorNames.length > 0 && (
-                  <p className="text-[0.65rem] text-[var(--color-text-muted)]">
+                  <p className="break-words text-[0.65rem] text-[var(--color-text-muted)]">
                     Supervisado por: {supervisorNames.join(", ")}
                   </p>
                 )}
@@ -292,27 +297,27 @@ export default async function AdminUsersPage({
 
       {/* Sección de supervisores */}
       {supervisors.length > 0 && (
-        <div className="space-y-3">
-          <div>
+        <div className="w-full space-y-3">
+          <div className="min-w-0">
             <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Asignaciones de aprobación</h2>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
               Definí qué empleados aprueba cada aprobador.
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid w-full gap-4 sm:grid-cols-2">
             {supervisors.map((sup) => {
               const myAssignments = assignmentsBySupervisor[sup.id] ?? [];
               const others = availableForSupervision.filter((u) => u.id !== sup.id);
               return (
-                <div key={sup.id} className="card p-4 space-y-3 border-l-4 border-purple-300">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 text-sm font-bold text-purple-700">
+                <div key={sup.id} className="card w-full space-y-3 border-l-4 border-purple-300 p-3 sm:p-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-100 text-sm font-bold text-purple-700 sm:h-9 sm:w-9">
                       {sup.full_name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="font-semibold text-sm text-[var(--color-text-primary)]">{sup.full_name}</p>
-                      <p className="text-[0.65rem] text-[var(--color-text-muted)]">{sup.email}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{sup.full_name}</p>
+                      <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">{sup.email}</p>
                     </div>
                   </div>
                   <div>
@@ -335,27 +340,27 @@ export default async function AdminUsersPage({
 
       {/* Sección de chusmas (solo lectura) */}
       {viewers.length > 0 && (
-        <div className="space-y-3">
-          <div>
+        <div className="w-full space-y-3">
+          <div className="min-w-0">
             <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Asignaciones de chusmas</h2>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
               Usuarios con rol <strong>Chusmas</strong> pueden ver las rendiciones de los empleados asignados, sin poder editarlas.
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid w-full gap-4 sm:grid-cols-2">
             {viewers.map((viewer) => {
               const myAssignments = assignmentsByViewer[viewer.id] ?? [];
               const available = allUsersForViewerAssign.filter((u) => u.id !== viewer.id);
               return (
-                <div key={viewer.id} className="card p-4 space-y-3 border-l-4 border-gray-300">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-700">
+                <div key={viewer.id} className="card w-full space-y-3 border-l-4 border-gray-300 p-3 sm:p-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-700 sm:h-9 sm:w-9">
                       {viewer.full_name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="font-semibold text-sm text-[var(--color-text-primary)]">{viewer.full_name}</p>
-                      <p className="text-[0.65rem] text-[var(--color-text-muted)]">{viewer.email}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{viewer.full_name}</p>
+                      <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">{viewer.email}</p>
                     </div>
                   </div>
                   <div>
@@ -378,7 +383,7 @@ export default async function AdminUsersPage({
       )}
 
       {supervisors.length === 0 && (
-        <div className="card p-6 text-center space-y-2">
+        <div className="card w-full space-y-2 p-4 text-center sm:p-6">
           <p className="text-sm text-[var(--color-text-muted)]">
             No hay supervisores aún. Cambiá el rol de un usuario a <strong>Supervisor</strong> para asignarle empleados.
           </p>

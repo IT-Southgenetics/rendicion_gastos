@@ -64,7 +64,7 @@ export default async function ExpensesPage({
   }
 
   if (status && Object.prototype.hasOwnProperty.call(STATUS_LABELS, status)) {
-    query = query.eq("status", status);
+    query = query.eq("status", status as "pending" | "approved" | "rejected" | "reviewing");
   }
 
   if (category && Object.prototype.hasOwnProperty.call(CATEGORY_LABELS, category)) {

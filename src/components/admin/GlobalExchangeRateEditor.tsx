@@ -155,42 +155,41 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
   }
 
   return (
-    <div className="card p-5 space-y-4">
-      <div>
+    <div className="card w-full space-y-4 p-3 sm:p-5">
+      <div className="min-w-0">
         <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
           Tipos de cambio globales
         </h2>
-        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-          Valores predeterminados que se aplican automáticamente a cada nueva rendición.
+        <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
           Cuántas unidades de cada moneda equivalen a <strong>1 USD</strong>.
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid w-full gap-3 grid-cols-1 sm:grid-cols-2">
         {SUPPORTED_CURRENCIES.map(({ code, label }) => (
-          <div key={code} className="space-y-1.5">
+          <div key={code} className="min-w-0 space-y-1.5">
             <label className="text-xs font-semibold text-[var(--color-text-primary)]">
               {code}
               <span className="font-normal text-[var(--color-text-muted)]"> — {label}</span>
             </label>
-            <p className="text-[0.7rem] text-[var(--color-text-muted)] -mt-1">
-              Última actualización: {fmtUpdatedAt(lastUpdatedAt[code])}
+            <p className="-mt-1 truncate text-[0.65rem] text-[var(--color-text-muted)]">
+              Actualizado: {fmtUpdatedAt(lastUpdatedAt[code])}
             </p>
-            <div className="flex h-10 overflow-hidden rounded-xl border border-[#d4cfe0] focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20 bg-white transition-all">
-              <span className="flex items-center bg-[#f5f1f8] px-3 text-xs font-semibold text-[var(--color-text-muted)] border-r border-[#d4cfe0] whitespace-nowrap shrink-0">
+            <div className="flex h-10 w-full overflow-hidden rounded-xl border border-[#d4cfe0] bg-white transition-all focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/20">
+              <span className="flex shrink-0 items-center border-r border-[#d4cfe0] bg-[#f5f1f8] px-2 text-xs font-semibold text-[var(--color-text-muted)] whitespace-nowrap sm:px-3">
                 1 USD =
               </span>
               <input
                 type="number"
                 step="0.01"
                 min="0.01"
-                className="flex-1 bg-transparent px-3 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)] min-w-0"
+                className="min-w-0 flex-1 bg-transparent px-2 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)] sm:px-3"
                 placeholder="0.00"
                 value={rates[code] ?? ""}
                 onChange={(e) => setRates((p) => ({ ...p, [code]: e.target.value }))}
                 disabled={loading || saving}
               />
-              <span className="flex items-center bg-[#f5f1f8] px-3 text-xs font-semibold text-[var(--color-text-muted)] border-l border-[#d4cfe0] shrink-0">
+              <span className="flex shrink-0 items-center border-l border-[#d4cfe0] bg-[#f5f1f8] px-2 text-xs font-semibold text-[var(--color-text-muted)] sm:px-3">
                 {code}
               </span>
             </div>
@@ -201,7 +200,7 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
       <button
         onClick={handleSave}
         disabled={loading || saving}
-        className="btn-primary w-full sm:w-auto text-sm"
+        className="btn-primary w-full text-center text-sm sm:w-auto"
       >
         {loading ? "Cargando..." : saving ? "Guardando..." : "Guardar tipos de cambio"}
       </button>
