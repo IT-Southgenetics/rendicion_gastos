@@ -68,11 +68,11 @@ export default async function ExpensesPage({
   }
 
   if (category && Object.prototype.hasOwnProperty.call(CATEGORY_LABELS, category)) {
-    query = query.eq("category", category);
+    query = query.eq("category", category as "transport" | "food" | "accommodation" | "communication" | "office_supplies" | "entertainment" | "fuel" | "other");
   }
 
   if (currency) {
-    query = query.eq("currency", currency);
+    query = query.eq("currency", currency as string & NonNullable<unknown>);
   }
 
   if (isValidDateParam(from)) {

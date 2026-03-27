@@ -66,35 +66,35 @@ function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium text-[var(--color-text-primary)]">
+    <form onSubmit={handleSubmit} className="space-y-3.5">
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-[var(--color-text-primary)]">
           Email
         </label>
         <input
           type="email"
-          className="input"
+          className="input !min-h-[38px] !py-2 !text-[0.85rem]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
       </div>
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium text-[var(--color-text-primary)]">
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-[var(--color-text-primary)]">
           Contraseña
         </label>
         <input
           type="password"
-          className="input"
+          className="input !min-h-[38px] !py-2 !text-[0.85rem]"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={6}
         />
-        <div className="pt-1 text-center">
+        <div className="pt-0.5 text-center">
           <Link
             href="/forgot-password"
-            className="text-xs font-medium text-[var(--color-primary)] hover:underline"
+            className="text-[0.7rem] font-medium text-[var(--color-primary)] hover:underline"
           >
             ¿Olvidaste tu contraseña?
           </Link>
@@ -102,7 +102,7 @@ function LoginForm() {
       </div>
       <button
         type="submit"
-        className="btn-primary w-full"
+        className="btn-primary w-full !min-h-[40px] !py-2 !text-[0.8rem]"
         disabled={loading}
       >
         {loading ? "Ingresando..." : "Ingresar"}
@@ -119,17 +119,17 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
-      <div className="card w-full max-w-md p-8">
-        <h1 className="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
+      <div className="card p-5 sm:p-6" style={{ width: "100%", maxWidth: 340 }}>
+        <h1 className="mb-1 text-base font-semibold text-[var(--color-text-primary)]">
           Iniciar sesión
         </h1>
-        <p className="mb-6 text-sm text-[var(--color-text-muted)]">
+        <p className="mb-4 text-[0.75rem] text-[var(--color-text-muted)]">
           Accede a tu panel de rendición de gastos.
         </p>
-        <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-[#f5f1f8]" />}>
+        <Suspense fallback={<div className="h-32 animate-pulse rounded-xl bg-[#f5f1f8]" />}>
           <LoginForm />
         </Suspense>
-        <p className="mt-4 text-center text-xs text-[var(--color-text-muted)]">
+        <p className="mt-3 text-center text-[0.7rem] text-[var(--color-text-muted)]">
           ¿No tienes cuenta?{" "}
           <a href="/register" className="text-[var(--color-primary)]">
             Registrarse

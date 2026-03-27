@@ -79,70 +79,70 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
-      <div className="card w-full max-w-md p-8">
-        <h1 className="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
+      <div className="card p-5 sm:p-6" style={{ width: "100%", maxWidth: 340 }}>
+        <h1 className="mb-1 text-base font-semibold text-[var(--color-text-primary)]">
           Crear cuenta
         </h1>
-        <p className="mb-6 text-sm text-[var(--color-text-muted)]">
+        <p className="mb-4 text-[0.75rem] text-[var(--color-text-muted)]">
           Regístrate para comenzar a rendir tus gastos.
         </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--color-text-primary)]">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--color-text-primary)]">
               Nombre completo
             </label>
             <input
               type="text"
-              className="input"
+              className="input !min-h-[38px] !py-2 !text-[0.85rem]"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--color-text-primary)]">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--color-text-primary)]">
               Email
             </label>
             <input
               type="email"
-              className="input"
+              className="input !min-h-[38px] !py-2 !text-[0.85rem]"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--color-text-primary)]">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--color-text-primary)]">
               Contraseña
             </label>
             <input
               type="password"
-              className="input"
+              className="input !min-h-[38px] !py-2 !text-[0.85rem]"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--color-text-primary)]">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--color-text-primary)]">
               Confirmar contraseña
             </label>
             <input
               type="password"
-              className="input"
+              className="input !min-h-[38px] !py-2 !text-[0.85rem]"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={6}
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--color-text-primary)]">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--color-text-primary)]">
               País
             </label>
             <select
-              className="input"
+              className="input !min-h-[38px] !py-2 !text-[0.85rem]"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               required
@@ -163,13 +163,13 @@ export default function RegisterPage() {
           )}
           <button
             type="submit"
-            className="btn-primary w-full"
+            className="btn-primary w-full !min-h-[40px] !py-2 !text-[0.8rem]"
             disabled={loading}
           >
             {loading ? "Creando cuenta..." : "Registrarse"}
           </button>
         </form>
-        <p className="mt-4 text-center text-xs text-[var(--color-text-muted)]">
+        <p className="mt-3 text-center text-[0.7rem] text-[var(--color-text-muted)]">
           ¿Ya tienes cuenta?{" "}
           <a href="/login" className="text-[var(--color-primary)]">
             Iniciar sesión
