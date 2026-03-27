@@ -62,12 +62,12 @@ export function NewReportForm() {
 
     // Cargar tipos de cambio globales para pre-poblar la rendición
     const { data: presets } = await supabase
-      .from("exchange_rate_presets")
-      .select("currency, rate");
+      .from("exchange_rates")
+      .select("currency_code, rate_to_usd");
 
     const exchange_rates: Record<string, number> = {};
-    for (const p of presets ?? []) {
-      exchange_rates[p.currency] = Number(p.rate);
+    for (const p of (presets ?? []) as { currency_code: string; rate_to_usd: number }[]) {
+      exchange_rates[p.currency_code] = Number(p.rate_to_usd);
     }
 
     const { data: report, error } = await supabase

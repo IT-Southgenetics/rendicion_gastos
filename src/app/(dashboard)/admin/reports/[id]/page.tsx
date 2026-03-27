@@ -51,7 +51,7 @@ export default async function AdminReportDetailPage({ params }: Props) {
       .select("*")
       .eq("report_id", id)
       .order("created_at", { ascending: false }),
-    supabase.from("exchange_rate_presets").select("currency, rate"),
+    supabase.from("exchange_rates").select("currency_code, rate_to_usd"),
   ]);
 
   if (!report) notFound();
@@ -67,7 +67,7 @@ export default async function AdminReportDetailPage({ params }: Props) {
 
   // Presets globales como base; las tasas propias del reporte tienen prioridad
   const globalPresets: Record<string, number> = {};
-  for (const p of presets ?? []) globalPresets[p.currency] = Number(p.rate);
+  for (const p of (presets ?? []) as { currency_code: string; rate_to_usd: number }[]) globalPresets[p.currency_code] = Number(p.rate_to_usd);
   const reportRates    = (report.exchange_rates ?? {}) as Record<string, number>;
   const savedRates     = reportRates; // tasas guardadas en el reporte (para el editor)
   const effectiveRates: Record<string, number> = { ...globalPresets, ...reportRates };

@@ -5,15 +5,23 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const SUPPORTED_CURRENCIES = [
-  { code: "UYU", label: "Peso uruguayo" },
-  { code: "ARS", label: "Peso argentino" },
-  { code: "PYG", label: "Guaraní paraguayo" },
-  { code: "BRL", label: "Real brasileño" },
-];
+const CURRENCY_LABELS: Record<string, string> = {
+  UYU: "Peso uruguayo",
+  ARS: "Peso argentino",
+  PYG: "Guaraní paraguayo",
+  BRL: "Real brasileño",
+  MXN: "Peso mexicano",
+  CLP: "Peso chileno",
+  COP: "Peso colombiano",
+};
+
+interface CurrencyRow {
+  code: string;
+  rate: number;
+  updatedAt: string | null;
+}
 
 interface GlobalExchangeRateEditorProps {
-  /** Rates actuales { UYU: 43, ARS: 1000, ... } */
   initialRates: Record<string, number>;
 }
 
@@ -21,14 +29,8 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
   const supabase = createSupabaseBrowserClient();
   const router = useRouter();
 
-  const [rates, setRates] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const { code } of SUPPORTED_CURRENCIES) {
-      init[code] = initialRates[code] ? String(initialRates[code]) : "";
-    }
-    return init;
-  });
-
+  const [currencies, setCurrencies] = useState<CurrencyRow[]>([]);
+  const [rates, setRates] = useState<Record<string, string>>({});
   const [lastSavedRates, setLastSavedRates] = useState<Record<string, number>>(() => ({ ...initialRates }));
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
@@ -55,8 +57,9 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
     async function load() {
       setLoading(true);
       const { data, error } = await supabase
-        .from("exchange_rate_presets")
-        .select("currency, rate, updated_at");
+        .from("exchange_rates")
+        .select("id, currency_code, rate_to_usd, updated_at")
+        .order("currency_code");
 
       if (cancelled) return;
       setLoading(false);
@@ -66,21 +69,23 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
         return;
       }
 
+      const rows = (data ?? []) as { id: string; currency_code: string; rate_to_usd: number; updated_at: string | null }[];
+
+      const nextCurrencies: CurrencyRow[] = [];
       const nextRatesStr: Record<string, string> = {};
       const nextSaved: Record<string, number> = {};
       const nextUpdatedAt: Record<string, string | null> = {};
 
-      for (const { code } of SUPPORTED_CURRENCIES) {
-        const row = (data ?? []).find((r) => r.currency === code) as
-          | { currency: string; rate: number; updated_at: string | null }
-          | undefined;
-
-        const rateNum = Number(row?.rate);
-        nextRatesStr[code] = row && Number.isFinite(rateNum) ? String(rateNum) : "";
-        if (row && Number.isFinite(rateNum)) nextSaved[code] = rateNum;
-        nextUpdatedAt[code] = row?.updated_at ?? null;
+      for (const row of rows) {
+        const code = row.currency_code;
+        const rateNum = Number(row.rate_to_usd);
+        nextCurrencies.push({ code, rate: rateNum, updatedAt: row.updated_at });
+        nextRatesStr[code] = Number.isFinite(rateNum) ? String(rateNum) : "";
+        if (Number.isFinite(rateNum)) nextSaved[code] = rateNum;
+        nextUpdatedAt[code] = row.updated_at ?? null;
       }
 
+      setCurrencies(nextCurrencies);
       setRates(nextRatesStr);
       setLastSavedRates(nextSaved);
       setLastUpdatedAt(nextUpdatedAt);
@@ -94,16 +99,16 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
 
   async function handleSave() {
     const parsed: Record<string, number> = {};
-    for (const { code } of SUPPORTED_CURRENCIES) {
-      const val = parseFloat(rates[code] ?? "");
+    for (const c of currencies) {
+      const val = parseFloat(rates[c.code] ?? "");
       if (isNaN(val) || val <= 0) {
-        toast.error(`Ingresá un tipo de cambio válido para ${code}.`);
+        toast.error(`Ingresá un tipo de cambio válido para ${c.code}.`);
         return;
       }
-      parsed[code] = val;
+      parsed[c.code] = val;
     }
 
-    const changedCodes = SUPPORTED_CURRENCIES
+    const changedCodes = currencies
       .map((c) => c.code)
       .filter((code) => {
         const prev = lastSavedRates[code];
@@ -118,19 +123,17 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
     }
 
     setSaving(true);
-    const { data: { session } } = await supabase.auth.getSession();
     const nowIso = new Date().toISOString();
 
     const upserts = changedCodes.map((code) => ({
-      currency:   code,
-      rate:       parsed[code],
-      updated_by: session?.user.id ?? null,
-      updated_at: nowIso,
+      currency_code: code,
+      rate_to_usd:   parsed[code],
+      updated_at:    nowIso,
     }));
 
     const { error } = await supabase
-      .from("exchange_rate_presets")
-      .upsert(upserts, { onConflict: "currency" });
+      .from("exchange_rates")
+      .upsert(upserts, { onConflict: "currency_code" });
 
     setSaving(false);
 
@@ -166,11 +169,13 @@ export function GlobalExchangeRateEditor({ initialRates }: GlobalExchangeRateEdi
       </div>
 
       <div className="grid w-full gap-3 grid-cols-1 sm:grid-cols-2">
-        {SUPPORTED_CURRENCIES.map(({ code, label }) => (
+        {currencies.map(({ code }) => (
           <div key={code} className="min-w-0 space-y-1.5">
             <label className="text-xs font-semibold text-[var(--color-text-primary)]">
               {code}
-              <span className="font-normal text-[var(--color-text-muted)]"> — {label}</span>
+              {CURRENCY_LABELS[code] && (
+                <span className="font-normal text-[var(--color-text-muted)]"> — {CURRENCY_LABELS[code]}</span>
+              )}
             </label>
             <p className="-mt-1 truncate text-[0.65rem] text-[var(--color-text-muted)]">
               Actualizado: {fmtUpdatedAt(lastUpdatedAt[code])}

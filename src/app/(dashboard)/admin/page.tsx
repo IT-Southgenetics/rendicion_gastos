@@ -23,7 +23,7 @@ export default async function AdminHomePage() {
     supabase.from("expenses").select("id").eq("status", "pending"),
     supabase.from("expenses").select("id").eq("status", "reviewing"),
     supabase.from("weekly_reports").select("id").eq("status", "open"),
-    supabase.from("exchange_rate_presets").select("currency, rate"),
+    supabase.from("exchange_rates").select("currency_code, rate_to_usd"),
   ]);
 
   const stats = [
@@ -33,10 +33,9 @@ export default async function AdminHomePage() {
     { label: "En revisión",          value: reviewingExpenses?.length ?? 0, color: "text-blue-600" },
   ];
 
-  // Convertir array de presets a objeto { UYU: 43, ARS: 1000, ... }
   const initialRates: Record<string, number> = {};
-  for (const p of presets ?? []) {
-    initialRates[p.currency] = Number(p.rate);
+  for (const p of (presets ?? []) as { currency_code: string; rate_to_usd: number }[]) {
+    initialRates[p.currency_code] = Number(p.rate_to_usd);
   }
 
   return (

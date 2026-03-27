@@ -45,11 +45,11 @@ export async function generateExcelExport(reportId: string): Promise<{
   }
 
   const { data: presets } = await supabase
-    .from("exchange_rate_presets")
-    .select("currency, rate");
+    .from("exchange_rates")
+    .select("currency_code, rate_to_usd");
 
   const globalPresets: Record<string, number> = {};
-  for (const p of presets ?? []) globalPresets[p.currency] = Number(p.rate);
+  for (const p of (presets ?? []) as { currency_code: string; rate_to_usd: number }[]) globalPresets[p.currency_code] = Number(p.rate_to_usd);
 
   const reportRates = (report.exchange_rates ?? {}) as Record<string, number>;
   const exchangeRates: Record<string, number> = { ...globalPresets, ...reportRates };

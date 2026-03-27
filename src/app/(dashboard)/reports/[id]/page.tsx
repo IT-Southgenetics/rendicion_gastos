@@ -53,7 +53,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
   const [{ data: report }, { data: expenses }, { data: presets }] = await Promise.all([
     reportQuery.maybeSingle(),
     supabase.from("expenses").select("*").eq("report_id", id).order("created_at", { ascending: false }),
-    supabase.from("exchange_rate_presets").select("currency, rate"),
+    supabase.from("exchange_rates").select("currency_code, rate_to_usd"),
   ]);
 
   if (!report) notFound();
@@ -90,7 +90,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
 
   // Presets globales como base, sobreescritos por las tasas propias del reporte
   const globalPresets: Record<string, number> = {};
-  for (const p of presets ?? []) globalPresets[p.currency] = Number(p.rate);
+  for (const p of (presets ?? []) as { currency_code: string; rate_to_usd: number }[]) globalPresets[p.currency_code] = Number(p.rate_to_usd);
   const reportRates = (r.exchange_rates ?? {}) as Record<string, number>;
   const effectiveRates: Record<string, number> = { ...globalPresets, ...reportRates };
 

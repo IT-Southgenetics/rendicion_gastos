@@ -117,24 +117,24 @@ export type Database = {
           },
         ]
       }
-      exchange_rate_presets: {
+      exchange_rates: {
         Row: {
-          currency:   string
-          rate:       number
-          updated_at: string | null
-          updated_by: string | null
+          id:            string
+          currency_code: string
+          rate_to_usd:   number
+          updated_at:    string | null
         }
         Insert: {
-          currency:   string
-          rate:       number
-          updated_at?: string | null
-          updated_by?: string | null
+          id?:           string
+          currency_code: string
+          rate_to_usd:   number
+          updated_at?:   string | null
         }
         Update: {
-          currency?:   string
-          rate?:       number
-          updated_at?: string | null
-          updated_by?: string | null
+          id?:            string
+          currency_code?: string
+          rate_to_usd?:   number
+          updated_at?:    string | null
         }
         Relationships: []
       }
