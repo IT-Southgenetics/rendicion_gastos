@@ -191,16 +191,6 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
         </p>
       </section>
 
-      {/* ── Comercio / Empresa ───────────────────────────────── */}
-      <section className="space-y-2">
-        <label className="block text-sm font-semibold text-[var(--color-text-primary)]">
-          Comercio / Empresa
-        </label>
-        <div className="input flex items-center bg-[#faf8fc] text-[var(--color-text-muted)]">
-          Se completa automáticamente con IA a partir del comprobante.
-        </div>
-      </section>
-
       {/* ── Moneda ──────────────────────────────────────────── */}
       <section className="space-y-2">
         <label className="block text-sm font-semibold text-[var(--color-text-primary)]">
