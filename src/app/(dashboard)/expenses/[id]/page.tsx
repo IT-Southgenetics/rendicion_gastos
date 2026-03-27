@@ -86,6 +86,15 @@ export default async function ExpenseDetailPage({ params, searchParams }: Expens
 
   return (
     <div className="w-full max-w-2xl space-y-5">
+      {/* Volver */}
+      <Link
+        href={normalizedReturnTo}
+        className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.8rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
+      >
+        <span>←</span>
+        <span>Volver</span>
+      </Link>
+
       {/* Encabezado */}
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
@@ -232,19 +241,6 @@ export default async function ExpenseDetailPage({ params, searchParams }: Expens
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <Link
-          href={normalizedReturnTo}
-          className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.8rem] font-semibold text-[var(--color-primary)] hover:bg-[#f5f1f8]"
-        >
-          <span>←</span>
-          <span>
-            {normalizedReturnTo.startsWith("/dashboard/aprobador")
-              ? "Volver a la rendición"
-              : "Volver a mis gastos"}
-          </span>
-        </Link>
-      </div>
     </div>
   );
 }

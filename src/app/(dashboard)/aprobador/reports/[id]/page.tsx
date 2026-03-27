@@ -125,9 +125,7 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
         >
           <span>←</span>
           <span>
-            {returnTo?.startsWith("/dashboard/aprobador/employee/")
-              ? "Volver al empleado"
-              : "Volver a aprobaciones"}
+Volver
           </span>
         </Link>
         <div className="min-w-0">

@@ -75,7 +75,7 @@ export default async function AprobadorEmployeeDetailPage({ params }: Props) {
           className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.7rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
         >
           <span>←</span>
-          <span>Volver a aprobaciones</span>
+          <span>Volver</span>
         </Link>
         <div className="min-w-0">
           <h1 className="page-title break-words">Rendiciones de {employee.full_name}</h1>

@@ -101,8 +101,8 @@ export default async function ChusmaViewPage({
   }>;
 
   return (
-    <div className="space-y-5">
-      <div>
+    <div className="w-full max-w-full space-y-5">
+      <div className="min-w-0">
         <h1 className="page-title">Auditoría</h1>
         <p className="page-subtitle">
           Rendiciones aprobadas o pagadas (solo lectura).
@@ -120,7 +120,56 @@ export default async function ChusmaViewPage({
         }}
       />
 
-      <div className="card overflow-hidden">
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {reportList.length === 0 && (
+          <div className="card px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
+            No hay rendiciones para auditar.
+          </div>
+        )}
+        {reportList.map((r) => {
+          const ws = (r.workflow_status ?? "approved") as "approved" | "paid";
+          const dateStr = (r.closed_at ?? r.created_at)
+            ? new Date((r.closed_at ?? r.created_at) as string).toLocaleDateString("es-UY")
+            : "—";
+
+          return (
+            <Link
+              key={r.id}
+              href={`/dashboard/reports/${r.id}`}
+              className="card block w-full space-y-2 p-3 transition-colors hover:bg-[#fdfbff]"
+            >
+              <div className="flex min-w-0 items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                    {r.title ?? "Sin título"}
+                  </p>
+                  <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">
+                    {r.employee?.full_name ?? "—"} · {dateStr}
+                  </p>
+                </div>
+                {ws === "paid" ? (
+                  <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[0.6rem] font-semibold text-emerald-700">Pagada</span>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[0.6rem] font-semibold text-gray-700">Pendiente</span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--color-text-muted)]">
+                {r.approver?.full_name && <span>Aprob: {r.approver.full_name}</span>}
+                {r.employee?.country && <span>{r.employee.country}</span>}
+                <span className="font-semibold text-[var(--color-text-primary)]">
+                  {typeof r.total_amount === "number"
+                    ? r.total_amount.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : "—"}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="card hidden overflow-hidden md:block">
         <div className="overflow-x-auto">
           <table className="min-w-[960px] w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">

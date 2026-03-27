@@ -117,11 +117,11 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
       {/* Encabezado */}
       <div>
         <Link
-          href="/dashboard/reports"
+          href={isChusma ? "/dashboard/chusma-view" : "/dashboard/reports"}
           className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.8rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
         >
           <span>←</span>
-          <span>Volver a mis rendiciones</span>
+          <span>Volver</span>
         </Link>
         <h1 className="page-title mt-3">
           {r.title ?? (
