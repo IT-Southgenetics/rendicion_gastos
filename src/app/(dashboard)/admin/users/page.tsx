@@ -5,7 +5,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { UserRoleEditor } from "@/components/admin/UserRoleEditor";
 import { SupervisionAssigner } from "@/components/admin/SupervisionAssigner";
-import { ViewerAssigner } from "@/components/admin/ViewerAssigner";
 import { DeleteUserButton } from "@/components/admin/DeleteUserButton";
 import { CountryFilter } from "@/components/admin/CountryFilter";
 
@@ -332,49 +331,7 @@ export default async function AdminUsersPage({
         </div>
       )}
 
-      {/* Sección de chusmas (solo lectura) */}
-      {viewers.length > 0 && (
-        <div className="w-full space-y-3">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Asignaciones de chusmas</h2>
-            <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-              Usuarios con rol <strong>Chusmas</strong> pueden ver las rendiciones de los empleados asignados, sin poder editarlas.
-            </p>
-          </div>
-
-          <div className="grid w-full gap-4 sm:grid-cols-2">
-            {viewers.map((viewer) => {
-              const myAssignments = assignmentsByViewer[viewer.id] ?? [];
-              const available = allUsersForViewerAssign.filter((u) => u.id !== viewer.id);
-              return (
-                <div key={viewer.id} className="card w-full space-y-3 border-l-4 border-gray-300 p-3 sm:p-4">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-700 sm:h-9 sm:w-9">
-                      {viewer.full_name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{viewer.full_name}</p>
-                      <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">{viewer.email}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[0.65rem] font-semibold uppercase text-[var(--color-text-muted)] mb-2">
-                      Puede ver rendiciones de:
-                    </p>
-                    <ViewerAssigner
-                      viewerId={viewer.id}
-                      viewerName={viewer.full_name}
-                      initialAssignments={myAssignments}
-                      availableEmployees={available}
-                      assignedByUserId={session.user.id}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Los chusmas ven todas las rendiciones automáticamente, no necesitan asignaciones */}
 
       {supervisors.length === 0 && (
         <div className="card w-full space-y-2 p-4 text-center sm:p-6">
