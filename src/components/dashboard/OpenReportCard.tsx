@@ -65,7 +65,7 @@ export function OpenReportCard({ reportId, title, totalOpen, weekStart, weekEnd 
         <button
           type="button"
           onClick={goToNewExpense}
-          className="btn-primary box-border w-full text-center text-xs py-2 px-3 sm:w-auto sm:px-4"
+          className="btn-primary btn-shimmer box-border w-full text-center text-xs py-2 px-3 sm:w-auto sm:px-4"
         >
           + Gasto
         </button>

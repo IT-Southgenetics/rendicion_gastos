@@ -92,16 +92,42 @@ body {
   font-weight: 600;
   background-color: var(--color-primary);
   color: var(--color-text-on-primary);
-  transition: background-color 150ms ease, box-shadow 150ms ease, transform 80ms ease;
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 120ms ease;
   min-height: 44px;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-primary:hover {
   background-color: var(--color-primary-light);
+  transform: scale(1.02);
 }
 
 .btn-primary:active {
-  transform: translateY(1px);
+  transform: scale(0.95);
+}
+
+/* Shimmer sweep for critical CTA buttons */
+@keyframes btn-shimmer-loop {
+  0%   { transform: translateX(-100%); }
+  20%  { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+
+.btn-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 40%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.15) 60%,
+    transparent 100%
+  );
+  animation: btn-shimmer-loop 5s ease-in-out infinite;
+  pointer-events: none;
 }
 
 /* ── Badges ── */

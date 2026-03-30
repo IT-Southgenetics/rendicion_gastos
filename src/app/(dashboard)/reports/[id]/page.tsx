@@ -115,41 +115,58 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
   return (
     <div className="space-y-4">
       {/* Encabezado */}
-      <div>
+      <div className="space-y-4">
         <Link
           href={isChusma ? "/dashboard/chusma-view" : "/dashboard/reports"}
-          className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.8rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
+          className="inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-[0.7rem] font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
         >
-          <span>←</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
           <span>Volver</span>
         </Link>
-        <h1 className="page-title mt-3">
-          {r.title ?? (
-            <>
-              {startDate.toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
-              {" – "}
-              {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
-            </>
-          )}
-        </h1>
-        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-          {startDate.toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
-          {" – "}
-          {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
-        </p>
-        {r.notes && <p className="page-subtitle italic">{r.notes}</p>}
+
+        <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-lg font-bold text-[var(--color-text-primary)] sm:text-xl">
+                {r.title ?? (
+                  <>
+                    {startDate.toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
+                    {" – "}
+                    {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
+                  </>
+                )}
+              </h1>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.65rem] font-semibold ${
+                isOpen ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-[var(--color-primary)]"
+              }`}>
+                {isOpen ? "Abierta" : "Cerrada"}
+              </span>
+              <span className="inline-flex items-center rounded-full bg-[#f5f1f8] px-2.5 py-0.5 text-[0.65rem] font-semibold text-[var(--color-text-muted)]">
+                {WORKFLOW_LABELS[workflowStatus] ?? workflowStatus}
+              </span>
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--color-text-muted)]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60" aria-hidden="true">
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                <line x1="16" x2="16" y1="2" y2="6" />
+                <line x1="8" x2="8" y1="2" y2="6" />
+                <line x1="3" x2="21" y1="10" y2="10" />
+              </svg>
+              <span>
+                {startDate.toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
+                {" – "}
+                {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+            </div>
+            {r.notes && (
+              <p className="mt-1.5 break-words text-sm italic text-[var(--color-text-muted)]">{r.notes}</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Acciones */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.7rem] font-semibold ${
-          isOpen ? "bg-emerald-100 text-emerald-700" : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-        }`}>
-          {isOpen ? "Abierta" : "Cerrada"}
-        </span>
-        <span className="inline-flex items-center rounded-full bg-[#f5f1f8] px-2.5 py-0.5 text-[0.7rem] font-semibold text-[var(--color-text-muted)]">
-          {WORKFLOW_LABELS[workflowStatus] ?? workflowStatus}
-        </span>
         <a
           href={`/api/reports/export?report_id=${r.id}`}
           className="rounded-full border border-[#e5e2ea] bg-white px-3 py-1 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
@@ -185,7 +202,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
           </div>
         )}
         {isOwner && isOpen && canEmployeeEditReport && (
-          <Link href={`/dashboard/expenses/new?reportId=${r.id}`} className="btn-primary w-full text-center text-sm sm:ml-auto sm:w-auto">
+          <Link href={`/dashboard/expenses/new?reportId=${r.id}`} className="btn-primary btn-shimmer w-full text-center text-sm sm:ml-auto sm:w-auto">
             + Agregar gasto
           </Link>
         )}
@@ -274,13 +291,8 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
 
       {/* Lista de gastos */}
       <div className="card overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#f0ecf4] px-4 py-3">
+        <div className="border-b border-[#f0ecf4] px-4 py-3">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Gastos</h2>
-        {isOwner && isOpen && canEmployeeEditReport && (
-            <Link href={`/dashboard/expenses/new?reportId=${r.id}`} className="text-xs font-medium text-[var(--color-primary)]">
-              + Agregar
-            </Link>
-          )}
         </div>
 
         {expenses && expenses.length > 0 ? (
@@ -453,11 +465,21 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center gap-3 py-12 text-center">
-            <div className="text-3xl">🧾</div>
-            <p className="text-sm text-[var(--color-text-muted)]">Sin gastos aún.</p>
+          <div className="flex flex-col items-center gap-4 py-14 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f5f1f8]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-primary)]" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                <path d="M14 2v6h6" />
+                <path d="M12 18v-6" />
+                <path d="M9 15h6" />
+              </svg>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">Sin gastos aún</p>
+              <p className="text-xs text-[var(--color-text-muted)]">Agregá tu primer gasto para comenzar.</p>
+            </div>
             {isOwner && isOpen && canEmployeeEditReport && (
-              <Link href={`/dashboard/expenses/new?reportId=${r.id}`} className="btn-primary text-sm">
+              <Link href={`/dashboard/expenses/new?reportId=${r.id}`} className="btn-primary btn-shimmer text-sm">
                 Agregar primer gasto
               </Link>
             )}

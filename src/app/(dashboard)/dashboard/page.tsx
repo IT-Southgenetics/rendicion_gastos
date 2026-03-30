@@ -77,14 +77,14 @@ export default async function DashboardPage() {
           </div>
           <Link
             href="/dashboard/reports/new"
-            className="btn-primary w-full shrink-0 text-center text-xs py-2 px-4 sm:w-auto"
+            className="btn-primary btn-shimmer w-full shrink-0 text-center text-xs py-2 px-4 sm:w-auto"
           >
             Crear
           </Link>
         </div>
       )}
 
-      <div className="grid w-full max-w-full grid-cols-2 gap-2">
+      <div className="grid w-full max-w-full grid-cols-3 gap-2">
         <Link
           href="/dashboard/reports"
           className="card flex min-w-0 flex-col items-center gap-2 px-2 py-4 text-center transition-transform active:scale-[0.97]"
@@ -114,6 +114,20 @@ export default async function DashboardPage() {
           </div>
           <span className="max-w-full truncate text-xs font-semibold text-[var(--color-text-primary)]">
             Histórico
+          </span>
+        </Link>
+        <Link
+          href="/dashboard/instructivo"
+          className="card flex min-w-0 flex-col items-center gap-2 px-2 py-4 text-center transition-transform active:scale-[0.97]"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600" aria-hidden="true">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </svg>
+          </div>
+          <span className="max-w-full truncate text-xs font-semibold text-[var(--color-text-primary)]">
+            Instructivo
           </span>
         </Link>
       </div>
