@@ -22,9 +22,9 @@ export function DeleteUserButton({ userId, fullName, isCurrentUser }: DeleteUser
     setLoading(true);
 
     const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.rpc("delete_user_completely", {
+    const { error } = await supabase.rpc("delete_user_completely" as string & keyof never, {
       target_user_id: userId,
-    });
+    } as any);
 
     setLoading(false);
     setConfirming(false);
