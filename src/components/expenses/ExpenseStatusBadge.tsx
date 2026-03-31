@@ -1,10 +1,11 @@
-type ExpenseStatus = "pending" | "approved" | "rejected" | "reviewing";
+type ExpenseStatus = "pending" | "approved" | "rejected" | "reviewing" | "paid";
 
 const STATUS_CONFIG: Record<ExpenseStatus, { label: string; classes: string }> = {
   pending:   { label: "Pendiente",   classes: "bg-amber-100 text-amber-800" },
   reviewing: { label: "En revisión", classes: "bg-blue-100 text-blue-800" },
   approved:  { label: "Aprobado",    classes: "bg-emerald-100 text-emerald-800" },
   rejected:  { label: "Rechazado",   classes: "bg-red-100 text-red-800" },
+  paid:      { label: "Pagado",      classes: "bg-blue-100 text-blue-700" },
 };
 
 export function ExpenseStatusBadge({ status }: { status: string }) {

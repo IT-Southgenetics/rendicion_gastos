@@ -26,11 +26,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   other:           "Otros",
 };
 
-const STATUS_LABELS: Record<ExpenseStatus, string> = {
+const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
-  reviewing: "En revision",
+  reviewing: "En revisión",
   approved: "Aprobado",
   rejected: "Rechazado",
+  paid: "Pagado",
 };
 
 function isValidDateParam(value: string | undefined): value is string {
@@ -56,7 +57,7 @@ export default async function ExpensesPage({
 
   let query = supabase
     .from("expenses")
-    .select("*")
+    .select("*, weekly_reports!expenses_report_id_fkey(workflow_status)")
     .eq("user_id", session.user.id);
 
   if (q) {
@@ -64,7 +65,11 @@ export default async function ExpensesPage({
   }
 
   if (status && Object.prototype.hasOwnProperty.call(STATUS_LABELS, status)) {
-    query = query.eq("status", status as "pending" | "approved" | "rejected" | "reviewing");
+    if (status === "paid") {
+      query = query.eq("status", "approved" as "pending" | "approved" | "rejected" | "reviewing");
+    } else {
+      query = query.eq("status", status as "pending" | "approved" | "rejected" | "reviewing");
+    }
   }
 
   if (category && Object.prototype.hasOwnProperty.call(CATEGORY_LABELS, category)) {
@@ -84,7 +89,14 @@ export default async function ExpensesPage({
   }
 
   const { data: expenses } = await query.order("expense_date", { ascending: false });
-  const filteredExpenses = (expenses as Expense[]) ?? [];
+  let filteredExpenses = (expenses ?? []) as (Expense & { weekly_reports: { workflow_status: string | null } | null })[];
+
+  if (status === "paid") {
+    filteredExpenses = filteredExpenses.filter((e) => e.weekly_reports?.workflow_status === "paid");
+  } else if (status === "approved") {
+    filteredExpenses = filteredExpenses.filter((e) => e.weekly_reports?.workflow_status !== "paid");
+  }
+
   const hasFilters = Boolean(q || status || category || currency || from || to);
 
   return (
@@ -202,7 +214,7 @@ export default async function ExpensesPage({
                     </td>
                     <td className="px-4 py-3 align-middle text-center max-[508px]:px-2">
                       <div className="flex justify-center">
-                        <ExpenseStatusBadge status={expense.status ?? "pending"} />
+                        <ExpenseStatusBadge status={expense.status === "approved" && expense.weekly_reports?.workflow_status === "paid" ? "paid" : (expense.status ?? "pending")} />
                       </div>
                     </td>
                     <td className="hidden px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] whitespace-nowrap 2xl:table-cell">
@@ -222,7 +234,14 @@ export default async function ExpensesPage({
         </div>
       ) : (
         <div className="card flex flex-col items-center gap-3 py-14 text-center">
-          <span className="text-4xl">🧾</span>
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f5f1f8]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-primary)]" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+              <path d="M14 2v6h6" />
+              <path d="M12 18v-6" />
+              <path d="M9 15h6" />
+            </svg>
+          </div>
           <p className="text-sm font-medium text-[var(--color-text-primary)]">
             {hasFilters ? "No hay gastos con esos filtros" : "Sin gastos registrados"}
           </p>

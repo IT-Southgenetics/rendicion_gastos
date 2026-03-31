@@ -26,21 +26,21 @@ export async function approveReportAction(formData: FormData) {
     await Promise.all([
       supabase
         .from("weekly_reports")
-        .select("id, user_id, title, total_amount")
+        .select("id, user_id, title, total_amount, budget_currency, exchange_rates")
         .eq("id", reportId)
         .single(),
       supabase
         .from("expenses")
-        .select("id, status")
+        .select("id, status, amount, currency, description, category, merchant_name, expense_date")
         .eq("report_id", reportId),
     ]);
 
   if (reportError || !report) {
-    throw new Error("No se encontró la rendición.");
+    throw new Error("No se encontr? la rendici?n.");
   }
 
   if (expensesError) {
-    throw new Error("No se pudieron obtener los gastos de la rendición.");
+    throw new Error("No se pudieron obtener los gastos de la rendici?n.");
   }
 
   const expenseList = expenses ?? [];
@@ -50,7 +50,7 @@ export async function approveReportAction(formData: FormData) {
 
   if (expenseList.length === 0 || hasAnyNotApproved) {
     throw new Error(
-      "No se puede aprobar la rendición si hay gastos pendientes o rechazados.",
+      "No se puede aprobar la rendici?n si hay gastos pendientes o rechazados.",
     );
   }
 
@@ -61,7 +61,7 @@ export async function approveReportAction(formData: FormData) {
     .single();
 
   if (ownerError) {
-    throw new Error("No se pudo obtener el dueño de la rendición.");
+    throw new Error("No se pudo obtener el due?o de la rendici?n.");
   }
 
   const { error: updateError } = await supabase
@@ -75,7 +75,7 @@ export async function approveReportAction(formData: FormData) {
     .eq("id", reportId);
 
   if (updateError) {
-    throw new Error("No se pudo aprobar la rendición.");
+    throw new Error("No se pudo aprobar la rendici?n.");
   }
 
   const webhookUrl =
@@ -145,7 +145,7 @@ export async function approveReportAction(formData: FormData) {
 
     if (payersError) {
       console.error(
-        "No se pudieron obtener los usuarios con rol pagador para la notificación de rendición aprobada:",
+        "No se pudieron obtener los usuarios con rol pagador para la notificaci?n de rendici?n aprobada:",
         payersError,
       );
     } else {
@@ -177,29 +177,50 @@ export async function approveReportAction(formData: FormData) {
         excelBase64 = buffer.toString("base64");
         excelName = fileName;
       } catch (e) {
-        console.error("No se pudo generar Excel para webhook (rendición aprobada):", e);
+        console.error("No se pudo generar Excel para webhook (rendici?n aprobada):", e);
       }
 
       const closedAtIso = new Date().toISOString();
+      const budgetCurrency = report?.budget_currency ?? "USD";
+      const reportExchangeRates = (report?.exchange_rates ?? {}) as Record<string, number>;
+
+      const currencies = new Set(
+        expenseList.map((e) => (e as any).currency ?? "UYU"),
+      );
+      const isMulticurrency = currencies.size > 1 || (currencies.size === 1 && !currencies.has(budgetCurrency));
+
+      const expenseDetails = expenseList.map((e: any) => ({
+        id: e.id,
+        amount: Number(e.amount),
+        currency: e.currency ?? "UYU",
+        description: e.description ?? "",
+        category: e.category ?? "",
+        merchant_name: e.merchant_name ?? "",
+        expense_date: e.expense_date ?? "",
+      }));
+
       const payload = {
         reportId: reportId,
         reportTitle: report?.title ?? "",
         employeeName: employeeData?.full_name || "Empleado",
         country: employeeData?.country ?? "",
         amount: report?.total_amount ?? 0,
+        budgetCurrency,
+        exchangeRates: reportExchangeRates,
+        isMulticurrency,
+        expenseDetails,
         closingDate: closedAtIso.slice(0, 10),
         closedAt: closedAtIso,
         employeeEmail,
         pagadorEmails,
         pagadorEmailList: payerEmailArray,
         ...(chusmaEmails ? { chusmaEmails, chusmaEmailList: effectiveChusmaEmailsList } : {}),
-        // Compatibilidad con flujos n8n antiguos
         targetEmails,
         excelBase64,
         excelName,
       };
 
-      console.log("Payload Aprobación:", payload);
+      console.log("Payload Aprobaci?n:", payload);
 
       try {
         const response = await fetch(webhookUrl as string, {
@@ -208,10 +229,10 @@ export async function approveReportAction(formData: FormData) {
           body: JSON.stringify(payload),
         });
         if (!response.ok) {
-          console.error("Error devuelto por n8n (rendición aprobada):", await response.text());
+          console.error("Error devuelto por n8n (rendici?n aprobada):", await response.text());
         }
       } catch (error) {
-        console.error("Error enviando webhook de rendición aprobada a N8N:", error);
+        console.error("Error enviando webhook de rendici?n aprobada a N8N:", error);
       }
     }
   }

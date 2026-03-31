@@ -342,7 +342,7 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
                         <span className="min-w-0 break-words text-sm font-semibold text-[var(--color-text-primary)]">
                           {expense.description}
                         </span>
-                        <ExpenseStatusBadge status={expense.status ?? "pending"} />
+                        <ExpenseStatusBadge status={expense.status === "approved" && workflowStatus === "paid" ? "paid" : (expense.status ?? "pending")} />
                       </div>
                       <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-[var(--color-text-muted)]">
                         {expense.expense_date && (

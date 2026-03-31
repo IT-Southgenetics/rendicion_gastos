@@ -10,9 +10,6 @@ function normalizeEmail(raw: string) {
   return raw.trim().toLowerCase();
 }
 
-function isSouthGeneticsEmail(email: string) {
-  return email.endsWith("@southgenetics.com");
-}
 
 function friendlyAuthError(message: string) {
   const m = (message || "").toLowerCase();
@@ -39,13 +36,6 @@ function LoginForm() {
     const supabase = createSupabaseBrowserClient();
 
     const normalizedEmail = normalizeEmail(email);
-    if (!isSouthGeneticsEmail(normalizedEmail)) {
-      setLoading(false);
-      const msg = "Solo se permite iniciar sesión con email @southgenetics.com.";
-      setFormError(msg);
-      toast.error(msg);
-      return;
-    }
 
     const { error } = await supabase.auth.signInWithPassword({
       email: normalizedEmail,

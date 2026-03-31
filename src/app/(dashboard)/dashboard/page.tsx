@@ -177,8 +177,15 @@ export default async function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <span className="text-3xl">🧾</span>
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f5f1f8]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-primary)]" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                <path d="M14 2v6h6" />
+                <path d="M12 18v-6" />
+                <path d="M9 15h6" />
+              </svg>
+            </div>
             <p className="text-sm text-[var(--color-text-muted)]">Aún no tenés gastos registrados.</p>
           </div>
         )}

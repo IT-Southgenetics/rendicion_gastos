@@ -9,9 +9,6 @@ function normalizeEmail(raw: string) {
   return raw.trim().toLowerCase();
 }
 
-function isSouthGeneticsEmail(email: string) {
-  return email.endsWith("@southgenetics.com");
-}
 
 function friendlyAuthError(message: string) {
   const m = (message || "").toLowerCase();
@@ -37,10 +34,6 @@ export default function RegisterPage() {
     setFormError(null);
 
     const normalizedEmail = normalizeEmail(email);
-    if (!isSouthGeneticsEmail(normalizedEmail)) {
-      setFormError("Solo se permiten cuentas con email @southgenetics.com.");
-      return;
-    }
     if (password.length < 6) {
       setFormError("La contraseña debe tener al menos 6 caracteres.");
       return;
@@ -72,6 +65,12 @@ export default function RegisterPage() {
       toast.error(msg);
       return;
     }
+
+    fetch("/api/webhook/new-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName, email: normalizedEmail, country }),
+    }).catch((err) => console.error("New-user webhook call failed:", err));
 
     toast.success("Cuenta creada. Revisa tu email si es necesario.");
     router.push("/login");

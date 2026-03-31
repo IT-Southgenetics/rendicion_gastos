@@ -134,14 +134,20 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                   </>
                 )}
               </h1>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.65rem] font-semibold ${
-                isOpen ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-[var(--color-primary)]"
-              }`}>
-                {isOpen ? "Abierta" : "Cerrada"}
-              </span>
-              <span className="inline-flex items-center rounded-full bg-[#f5f1f8] px-2.5 py-0.5 text-[0.65rem] font-semibold text-[var(--color-text-muted)]">
-                {WORKFLOW_LABELS[workflowStatus] ?? workflowStatus}
-              </span>
+              {(() => {
+                switch (workflowStatus) {
+                  case "paid":
+                    return <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-[0.65rem] font-semibold text-blue-700">Pagada</span>;
+                  case "approved":
+                    return <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[0.65rem] font-semibold text-emerald-700">Aprobada</span>;
+                  case "submitted":
+                    return <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[0.65rem] font-semibold text-amber-700">Enviada a revisión</span>;
+                  case "needs_correction":
+                    return <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-[0.65rem] font-semibold text-red-700">Con correcciones</span>;
+                  default:
+                    return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.65rem] font-semibold ${isOpen ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-[var(--color-primary)]"}`}>{isOpen ? "Abierta" : "Borrador"}</span>;
+                }
+              })()}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--color-text-muted)]">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60" aria-hidden="true">
@@ -326,7 +332,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                         {usd !== null && (expense.currency ?? "UYU") !== "USD" && (
                           <span className="text-[0.65rem] font-semibold text-emerald-700">≈ USD {fmt(usd)}</span>
                         )}
-                        <ExpenseStatusBadge status={expense.status ?? "pending"} />
+                        <ExpenseStatusBadge status={expense.status === "approved" && workflowStatus === "paid" ? "paid" : (expense.status ?? "pending")} />
                       </div>
                     </Link>
                     {expense.status === "rejected" && expense.rejection_reason && (
@@ -412,7 +418,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                         </td>
                       )}
                       <td className="px-4 py-3 align-middle">
-                        <ExpenseStatusBadge status={expense.status ?? "pending"} />
+                        <ExpenseStatusBadge status={expense.status === "approved" && workflowStatus === "paid" ? "paid" : (expense.status ?? "pending")} />
                       </td>
                       <td className="px-4 py-3 align-middle text-center">
                         {canEmployeeEditReport &&

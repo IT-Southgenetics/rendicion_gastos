@@ -58,6 +58,7 @@ export default async function AdminReportDetailPage({ params }: Props) {
 
   const user = report.profiles as { full_name: string; email: string; department: string | null } | null;
   const isOpen = report.status === "open";
+  const workflowStatus = (report.workflow_status ?? "draft") as string;
   const expenseList = (expenses ?? []) as Expense[];
 
   // Monedas distintas a USD usadas en los gastos
@@ -233,7 +234,7 @@ export default async function AdminReportDetailPage({ params }: Props) {
                         <span className="break-words text-sm font-semibold text-[var(--color-text-primary)]">
                           {expense.description}
                         </span>
-                        <ExpenseStatusBadge status={expense.status ?? "pending"} />
+                        <ExpenseStatusBadge status={expense.status === "approved" && workflowStatus === "paid" ? "paid" : (expense.status ?? "pending")} />
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[var(--color-text-muted)]">
                         <span>{new Date(expense.expense_date + "T12:00:00").toLocaleDateString("es-UY")}</span>
