@@ -119,18 +119,32 @@ export function PayReportModal({
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-medium text-[var(--color-text-primary)]">
-                  Monto pagado
-                </label>
-                <input
-                  type="number"
-                  name="amountPaid"
-                  step="0.01"
-                  required
-                  defaultValue={suggestedDefault}
-                  className="input text-xs"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-[var(--color-text-primary)]">
+                    Monto pagado
+                  </label>
+                  <input
+                    type="number"
+                    name="amountPaid"
+                    step="0.01"
+                    required
+                    defaultValue={suggestedDefault}
+                    className="input text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-[var(--color-text-primary)]">
+                    Moneda
+                  </label>
+                  <select name="paymentCurrency" required defaultValue="USD" className="input text-xs">
+                    <option value="USD">USD — Dólar</option>
+                    <option value="UYU">UYU — Peso uruguayo</option>
+                    <option value="ARS">ARS — Peso argentino</option>
+                    <option value="PYG">PYG — Guaraní</option>
+                    <option value="BRL">BRL — Real</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1">

@@ -263,7 +263,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
               </p>
               <p className="mt-1 text-sm font-bold text-blue-700">
                 {typeof r.amount_paid === "number"
-                  ? `${budgetCurrency} ${fmt(Number(r.amount_paid))}`
+                  ? `${(r as any).payment_currency ?? budgetCurrency} ${fmt(Number(r.amount_paid))}`
                   : "—"}
               </p>
             </div>

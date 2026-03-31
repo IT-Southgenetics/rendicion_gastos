@@ -279,7 +279,7 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
               </p>
               <p className="mt-1 text-sm font-bold text-blue-700">
                 {typeof report.amount_paid === "number"
-                  ? `${budgetCurrency} ${fmt(Number(report.amount_paid))}`
+                  ? `${(report as any).payment_currency ?? budgetCurrency} ${fmt(Number(report.amount_paid))}`
                   : "—"}
               </p>
             </div>

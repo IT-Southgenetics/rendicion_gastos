@@ -21,6 +21,7 @@ export async function payReportAction(
 
   const paymentDate = formData.get("paymentDate") as string | null;
   const amountPaidRaw = formData.get("amountPaid") as string | null;
+  const paymentCurrency = (formData.get("paymentCurrency") as string | null) ?? "USD";
   const paymentDestination = formData.get("paymentDestination") as string | null;
   const receiptFile = formData.get("receiptFile") as File | null;
 
@@ -85,6 +86,7 @@ export async function payReportAction(
       workflow_status: "paid",
       payment_date: paymentDate,
       amount_paid: amountPaid,
+      payment_currency: paymentCurrency,
       payment_destination: paymentDestination,
       payment_receipt_url: publicUrl,
     })
@@ -203,6 +205,7 @@ export async function payReportAction(
           reportId,
           paymentDate,
           amountPaid,
+          paymentCurrency,
           paymentDestination,
           paymentReceiptUrl: publicUrl,
           employeeEmail,
