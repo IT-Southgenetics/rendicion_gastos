@@ -33,8 +33,9 @@ export async function POST(req: Request) {
   }
 
   if (!adminEmails) {
-    console.error("No admin emails found — skipping new-user webhook");
-    return NextResponse.json({ ok: true, skipped: true });
+    // Fallback: si por algún motivo no hay admins, igual disparamos el webhook.
+    // Podés manejar el caso de string vacío en n8n si lo necesitás.
+    console.error("No admin emails found — using empty adminEmails in new-user webhook payload");
   }
 
   try {

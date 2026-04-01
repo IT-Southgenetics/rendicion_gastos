@@ -190,7 +190,13 @@ export function EditExpenseForm({ expense }: EditExpenseFormProps) {
       )}
 
       {(isReviewing || isRejected) && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-800 space-y-1">
+        <div
+          className={`rounded-xl px-4 py-3 text-xs space-y-1 ${
+            isRejected
+              ? "border border-red-200 bg-red-50 text-red-800"
+              : "border border-amber-200 bg-amber-50 text-amber-800"
+          }`}
+        >
           <p className="font-semibold">
             {isReviewing
               ? "Este gasto está en revisión"
