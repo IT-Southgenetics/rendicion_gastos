@@ -141,8 +141,8 @@ export function PayReportModal({
                     <option value="USD">USD — Dólar</option>
                     <option value="UYU">UYU — Peso uruguayo</option>
                     <option value="ARS">ARS — Peso argentino</option>
-                    <option value="PYG">PYG — Guaraní</option>
-                    <option value="BRL">BRL — Real</option>
+                    <option value="MXN">MXN — Peso mexicano</option>
+                    <option value="CLP">CLP — Peso chileno</option>
                   </select>
                 </div>
               </div>

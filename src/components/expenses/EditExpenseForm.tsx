@@ -28,8 +28,8 @@ const CURRENCIES = [
   { value: "UYU", label: "Peso uruguayo (UYU)" },
   { value: "USD", label: "Dólar (USD)" },
   { value: "ARS", label: "Peso argentino (ARS)" },
-  { value: "PYG", label: "Guaraní paraguayo (PYG)" },
-  { value: "BRL", label: "Real brasileño (BRL)" },
+  { value: "MXN", label: "Peso mexicano (MXN)" },
+  { value: "CLP", label: "Peso chileno (CLP)" },
 ] as const;
 
 export function EditExpenseForm({ expense }: EditExpenseFormProps) {
