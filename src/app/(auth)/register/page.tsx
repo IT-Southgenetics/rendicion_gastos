@@ -66,11 +66,21 @@ export default function RegisterPage() {
       return;
     }
 
-    fetch("/api/webhook/new-user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fullName, email: normalizedEmail, country }),
-    }).catch((err) => console.error("New-user webhook call failed:", err));
+    try {
+      const res = await fetch("/api/webhook/new-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName,
+          email: normalizedEmail,
+          country,
+          role: "employee",
+        }),
+      });
+      console.log("Resultado notificación nuevo-usuario (cliente):", res.status);
+    } catch (err) {
+      console.error("New-user webhook call failed:", err);
+    }
 
     toast.success("Cuenta creada. Revisa tu email si es necesario.");
     router.push("/login");

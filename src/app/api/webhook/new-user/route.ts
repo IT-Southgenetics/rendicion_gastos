@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
-  const { fullName, email, country } = (await req.json()) as {
+  const { fullName, email, country, role } = (await req.json()) as {
     fullName: string;
     email: string;
-    country: string;
+    country?: string;
+    role?: string;
   };
 
   if (!fullName || !email) {
@@ -33,19 +34,21 @@ export async function POST(req: Request) {
   }
 
   if (!adminEmails) {
-    // Fallback: si por algún motivo no hay admins, igual disparamos el webhook.
-    // Podés manejar el caso de string vacío en n8n si lo necesitás.
-    console.error("No admin emails found — using empty adminEmails in new-user webhook payload");
+    // Si por algún motivo no hay admins, igual enviamos el webhook
+    console.error(
+      "No admin emails found — using empty adminEmails in new-user webhook payload",
+    );
   }
 
   try {
     const payload = {
-      fullName,
-      email,
-      country,
+      userName: fullName,
+      userEmail: email,
+      userRole: role ?? "employee",
       adminEmails,
-      createdAt: new Date().toISOString(),
     };
+
+    console.log("Intentando notificar a n8n (nuevo-usuario)...", payload);
 
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -53,8 +56,14 @@ export async function POST(req: Request) {
       body: JSON.stringify(payload),
     });
 
+    console.log("Resultado notificación nuevo-usuario:", response.status);
+
     if (!response.ok) {
-      console.error("n8n new-user webhook error:", response.status, await response.text());
+      console.error(
+        "n8n new-user webhook error:",
+        response.status,
+        await response.text(),
+      );
     }
   } catch (err) {
     console.error("Error sending new-user webhook to n8n:", err);
