@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS } from "@/config/tempFeatureFlags";
 
 export interface UploadedFile {
   storagePath: string;
@@ -106,7 +107,21 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
 
   function handleFilesSelected(files: FileList | null) {
     if (!files) return;
-    Array.from(files).forEach((file) => void uploadFile(file));
+
+    if (!TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS) {
+      const currentCount = existing.length + uploaded.length;
+      if (currentCount >= 1) {
+        toast.error("Solo se permite un comprobante por gasto.");
+        return;
+      }
+      const first = Array.from(files)[0];
+      if (first) void uploadFile(first);
+      return;
+    }
+
+    for (const file of Array.from(files)) {
+      void uploadFile(file);
+    }
   }
 
   function removeUploaded(index: number) {
@@ -119,7 +134,6 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
 
   const uploadingCount = Object.keys(progress).length;
   const hasFiles       = existing.length > 0 || uploaded.length > 0;
-  const reachedLimit   = false; // temporal: sin límite de comprobantes
 
   return (
     <div className="space-y-3">
@@ -222,10 +236,18 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
       >
         <div>
           <p className="text-sm font-medium text-[var(--color-text-primary)]">
-            {hasFiles ? "Podés agregar más comprobantes" : "Arrastrá los comprobantes aquí"}
+            {TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS
+              ? hasFiles
+                ? "Comprobantes cargados — podés agregar más"
+                : "Arrastrá comprobantes aquí"
+              : hasFiles
+                ? "Comprobante cargado"
+                : "Arrastrá el comprobante aquí"}
           </p>
           <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-            Imágenes (JPG, PNG, WEBP) o PDF · máx. 10 MB por archivo
+            {TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS
+              ? "Varios archivos permitidos · imágenes (JPG, PNG, WEBP) o PDF · máx. 10 MB por archivo"
+              : "Imágenes (JPG, PNG, WEBP) o PDF · máx. 10 MB por archivo"}
           </p>
         </div>
 
@@ -238,16 +260,20 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
             ref={inputRef}
             type="file"
             accept="image/*,.jpg,.jpeg,.pdf,application/pdf,image/jpeg"
-            multiple
             className="hidden"
+            multiple={TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS}
             onChange={(e) => handleFilesSelected(e.target.files)}
             disabled={uploadingCount > 0}
           />
           {uploadingCount > 0
-            ? `Subiendo…`
+            ? TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS
+              ? "Subiendo comprobantes…"
+              : "Subiendo comprobante…"
             : hasFiles
-            ? "Agregar más comprobantes"
-            : "Seleccionar archivo(s)"}
+              ? TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS
+                ? "Agregar más archivos"
+                : "Reemplazar comprobante"
+              : "Seleccionar archivo"}
         </label>
       </div>
     </div>

@@ -80,7 +80,8 @@ export async function approveReportAction(formData: FormData) {
 
   const webhookUrl =
     process.env.N8N_WEBHOOK_URL_APROBAR_CIERRE ??
-    process.env.N8N_WEBHOOK_URL_RENDICION_APROBADA;
+    process.env.N8N_WEBHOOK_URL_RENDICION_APROBADA ??
+    "https://n8n.srv908725.hstgr.cloud/webhook/aprobar-cierre";
   if (webhookUrl) {
     // Obtener usuarios chusmas (auditor?a) para copiar en la notificaci?n
     const { data: chusmasData, error: chusmasError } = await supabase
@@ -148,92 +149,92 @@ export async function approveReportAction(formData: FormData) {
         "No se pudieron obtener los usuarios con rol pagador para la notificaci?n de rendici?n aprobada:",
         payersError,
       );
-    } else {
-      const payerEmailArray = Array.from(
-        new Set(
-          (effectivePayers ?? [])
-            .map((p) => p.email)
-            .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
-            .map((e) => e.trim().toLowerCase()),
-        ),
-      );
+    }
 
-      const pagadorEmails = payerEmailArray.join(",");
-      const employeeEmail =
-        typeof employeeData?.email === "string" ? employeeData.email : "";
+    const payerEmailArray = Array.from(
+      new Set(
+        (effectivePayers ?? [])
+          .map((p) => p.email)
+          .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
+          .map((e) => e.trim().toLowerCase()),
+      ),
+    );
 
-      const targetEmails = Array.from(
-        new Set(
-          [employeeEmail, ...pagadorEmails.split(",")]
-            .map((e) => e.trim())
-            .filter(Boolean),
-        ),
-      ).join(",");
+    const pagadorEmails = payerEmailArray.join(",");
+    const employeeEmail =
+      typeof employeeData?.email === "string" ? employeeData.email : "";
 
-      let excelBase64 = "";
-      let excelName = `Rendicion_${reportId.slice(0, 6)}.xlsx`;
-      try {
-        const { buffer, fileName } = await generateExcelExport(reportId);
-        excelBase64 = buffer.toString("base64");
-        excelName = fileName;
-      } catch (e) {
-        console.error("No se pudo generar Excel para webhook (rendici?n aprobada):", e);
+    const targetEmails = Array.from(
+      new Set(
+        [employeeEmail, ...pagadorEmails.split(",")]
+          .map((e) => e.trim())
+          .filter(Boolean),
+      ),
+    ).join(",");
+
+    let excelBase64 = "";
+    let excelName = `Rendicion_${reportId.slice(0, 6)}.xlsx`;
+    try {
+      const { buffer, fileName } = await generateExcelExport(reportId);
+      excelBase64 = buffer.toString("base64");
+      excelName = fileName;
+    } catch (e) {
+      console.error("No se pudo generar Excel para webhook (rendici?n aprobada):", e);
+    }
+
+    const closedAtIso = new Date().toISOString();
+    const budgetCurrency = report?.budget_currency ?? "USD";
+    const reportExchangeRates = (report?.exchange_rates ?? {}) as Record<string, number>;
+
+    const currencies = new Set(
+      expenseList.map((e) => (e as any).currency ?? "UYU"),
+    );
+    const isMulticurrency = currencies.size > 1 || (currencies.size === 1 && !currencies.has(budgetCurrency));
+
+    const expenseDetails = expenseList.map((e: any) => ({
+      id: e.id,
+      amount: Number(e.amount),
+      currency: e.currency ?? "UYU",
+      description: e.description ?? "",
+      category: e.category ?? "",
+      merchant_name: e.merchant_name ?? "",
+      expense_date: e.expense_date ?? "",
+    }));
+
+    const payload = {
+      reportId: reportId,
+      reportTitle: report?.title ?? "",
+      employeeName: employeeData?.full_name || "Empleado",
+      country: employeeData?.country ?? "",
+      amount: report?.total_amount ?? 0,
+      budgetCurrency,
+      exchangeRates: reportExchangeRates,
+      isMulticurrency,
+      expenseDetails,
+      closingDate: closedAtIso.slice(0, 10),
+      closedAt: closedAtIso,
+      employeeEmail,
+      pagadorEmails,
+      pagadorEmailList: payerEmailArray,
+      ...(chusmaEmails ? { chusmaEmails, chusmaEmailList: effectiveChusmaEmailsList } : {}),
+      targetEmails,
+      excelBase64,
+      excelName,
+    };
+
+    console.log("Payload Aprobaci?n:", payload);
+
+    try {
+      const response = await fetch(webhookUrl as string, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        console.error("Error devuelto por n8n (rendici?n aprobada):", await response.text());
       }
-
-      const closedAtIso = new Date().toISOString();
-      const budgetCurrency = report?.budget_currency ?? "USD";
-      const reportExchangeRates = (report?.exchange_rates ?? {}) as Record<string, number>;
-
-      const currencies = new Set(
-        expenseList.map((e) => (e as any).currency ?? "UYU"),
-      );
-      const isMulticurrency = currencies.size > 1 || (currencies.size === 1 && !currencies.has(budgetCurrency));
-
-      const expenseDetails = expenseList.map((e: any) => ({
-        id: e.id,
-        amount: Number(e.amount),
-        currency: e.currency ?? "UYU",
-        description: e.description ?? "",
-        category: e.category ?? "",
-        merchant_name: e.merchant_name ?? "",
-        expense_date: e.expense_date ?? "",
-      }));
-
-      const payload = {
-        reportId: reportId,
-        reportTitle: report?.title ?? "",
-        employeeName: employeeData?.full_name || "Empleado",
-        country: employeeData?.country ?? "",
-        amount: report?.total_amount ?? 0,
-        budgetCurrency,
-        exchangeRates: reportExchangeRates,
-        isMulticurrency,
-        expenseDetails,
-        closingDate: closedAtIso.slice(0, 10),
-        closedAt: closedAtIso,
-        employeeEmail,
-        pagadorEmails,
-        pagadorEmailList: payerEmailArray,
-        ...(chusmaEmails ? { chusmaEmails, chusmaEmailList: effectiveChusmaEmailsList } : {}),
-        targetEmails,
-        excelBase64,
-        excelName,
-      };
-
-      console.log("Payload Aprobaci?n:", payload);
-
-      try {
-        const response = await fetch(webhookUrl as string, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!response.ok) {
-          console.error("Error devuelto por n8n (rendici?n aprobada):", await response.text());
-        }
-      } catch (error) {
-        console.error("Error enviando webhook de rendici?n aprobada a N8N:", error);
-      }
+    } catch (error) {
+      console.error("Error enviando webhook de rendici?n aprobada a N8N:", error);
     }
   }
 
