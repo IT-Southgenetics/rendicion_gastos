@@ -169,7 +169,7 @@ export function PayReportModal({
                 <input
                   type="file"
                   name="receiptFile"
-                  accept="image/*,.jpg,.jpeg,.pdf,application/pdf,image/jpeg"
+                  accept="image/*,application/pdf"
                   required
                   className="block w-full text-[0.7rem] text-[var(--color-text-muted)] file:mr-2 file:rounded-full file:border-0 file:bg-[var(--color-primary)] file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white hover:file:bg-[var(--color-primary-dark)]"
                 />

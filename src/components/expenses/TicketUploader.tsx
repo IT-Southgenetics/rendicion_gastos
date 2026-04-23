@@ -32,12 +32,28 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
 
   // Por cada archivo en cola: id → progreso 0-100 | "error"
   const [progress, setProgress] = useState<Record<string, number | "error">>({});
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [dragging, setDragging] = useState(false);
 
   const isPdfFile = (file: File) => file.type === "application/pdf";
   const isImageFile = (file: File) => file.type.startsWith("image/");
+  const hasPdfExtension = (fileName: string) => {
+    const extension = fileName.slice(fileName.lastIndexOf("."));
+    return extension === ".pdf" || extension === ".PDF";
+  };
+  const isAllowedFile = (file: File) => isImageFile(file) || isPdfFile(file) || hasPdfExtension(file.name);
   const isPdfUrl = (url: string) => /\.pdf($|[?#])/i.test(url);
+
+  const getValidationError = (file: File) => {
+    if (!isAllowedFile(file)) {
+      return `"${file.name}" fue rechazado: formato no permitido. Solo se aceptan imagenes o PDF.`;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return `"${file.name}" fue rechazado: supera los 10MB permitidos.`;
+    }
+    return null;
+  };
 
   // Notifica al padre DESPUÉS del render para evitar setState-durante-render
   const onUploadsChangedRef = useRef(onUploadsChanged);
@@ -48,14 +64,13 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
   }, [uploaded]);
 
   async function uploadFile(file: File) {
-    if (!isImageFile(file) && !isPdfFile(file)) {
-      toast.error(`"${file.name}": solo se permiten imágenes o PDF.`);
+    const validationError = getValidationError(file);
+    if (validationError) {
+      setUploadError(validationError);
+      toast.error(validationError);
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error(`"${file.name}" supera los 10MB.`);
-      return;
-    }
+    setUploadError(null);
 
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
@@ -95,7 +110,7 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
     const entry: UploadedFile = {
       storagePath: `comprobantes/${path}`,
       publicUrl,
-      previewUrl:  URL.createObjectURL(file),
+      previewUrl:  isImageFile(file) ? URL.createObjectURL(file) : "",
       name:        file.name,
       mimeType:    file.type,
     };
@@ -107,6 +122,7 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
 
   function handleFilesSelected(files: FileList | null) {
     if (!files) return;
+    setUploadError(null);
 
     if (!TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS) {
       const currentCount = existing.length + uploaded.length;
@@ -206,7 +222,7 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
           {Object.entries(progress).map(([id, pct]) => (
             <div key={id} className="relative aspect-square overflow-hidden rounded-xl border border-[#e5e2ea] bg-[#f5f1f8] flex flex-col items-center justify-center gap-2 p-3">
               {pct === "error" ? (
-                <p className="text-xs font-medium text-red-500">Error</p>
+                <p className="text-xs font-medium text-red-500">Error de subida. Revisa formato y peso.</p>
               ) : (
                 <>
                   <div className="h-1 w-full overflow-hidden rounded-full bg-[#e5e2ea]">
@@ -259,7 +275,7 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
           <input
             ref={inputRef}
             type="file"
-            accept="image/*,.jpg,.jpeg,.pdf,application/pdf,image/jpeg"
+            accept="image/*,application/pdf"
             className="hidden"
             multiple={TEMP_ALLOW_MULTIPLE_EXPENSE_RECEIPTS}
             onChange={(e) => handleFilesSelected(e.target.files)}
@@ -276,6 +292,11 @@ export function TicketUploader({ onUploadsChanged, existingUrls = [] }: TicketUp
               : "Seleccionar archivo"}
         </label>
       </div>
+      {uploadError && (
+        <p className="text-xs font-medium text-red-600">
+          {uploadError}
+        </p>
+      )}
     </div>
   );
 }
