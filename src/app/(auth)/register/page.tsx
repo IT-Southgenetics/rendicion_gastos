@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import { isAllowedCorporateEmail, allowedCorporateEmailMessage } from "@/lib/auth/emailDomain";
 
 function normalizeEmail(raw: string) {
   return raw.trim().toLowerCase();
@@ -34,6 +35,10 @@ export default function RegisterPage() {
     setFormError(null);
 
     const normalizedEmail = normalizeEmail(email);
+    if (!isAllowedCorporateEmail(normalizedEmail)) {
+      setFormError(allowedCorporateEmailMessage());
+      return;
+    }
     if (password.length < 6) {
       setFormError("La contraseña debe tener al menos 6 caracteres.");
       return;
@@ -117,8 +122,12 @@ export default function RegisterPage() {
               className="input !min-h-[38px] !py-2 !text-[0.85rem]"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="nombre@southgenetics.com"
               required
             />
+            <p className="text-[0.7rem] text-[var(--color-text-muted)]">
+              Solo se permite registro con emails @southgenetics.com o @pacificgenomics.cl.
+            </p>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-[var(--color-text-primary)]">

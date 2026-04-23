@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isAllowedCorporateEmail, allowedCorporateEmailMessage } from "@/lib/auth/emailDomain";
 
 export async function POST(req: Request) {
   const { fullName, email, country, role } = (await req.json()) as {
@@ -11,6 +12,9 @@ export async function POST(req: Request) {
 
   if (!fullName || !email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+  if (!isAllowedCorporateEmail(email)) {
+    return NextResponse.json({ error: allowedCorporateEmailMessage() }, { status: 400 });
   }
 
   const webhookUrl = process.env.N8N_WEBHOOK_URL_NUEVO_USUARIO;
