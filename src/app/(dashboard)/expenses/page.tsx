@@ -12,6 +12,7 @@ type SearchParams = {
   category?: string;
   currency?: string;
   reportId?: string;
+  reportName?: string;
   from?: string;
   to?: string;
 };
@@ -54,6 +55,7 @@ export default async function ExpensesPage({
   const category = (params.category ?? "").trim();
   const currency = (params.currency ?? "").trim().toUpperCase();
   const reportId = (params.reportId ?? "").trim();
+  const reportName = (params.reportName ?? "").trim();
   const from = (params.from ?? "").trim();
   const to = (params.to ?? "").trim();
 
@@ -97,6 +99,16 @@ export default async function ExpensesPage({
   }
   if (reportId && validReportIds.has(reportId)) {
     query = query.eq("report_id", reportId);
+  } else if (reportName) {
+    const normalizedSearch = reportName.toLowerCase();
+    const matchingIds = reports
+      .filter((report) => (report.title ?? "").toLowerCase().includes(normalizedSearch))
+      .map((report) => report.id);
+    if (matchingIds.length === 0) {
+      query = query.eq("report_id", "__no_report_match__");
+    } else {
+      query = query.in("report_id", matchingIds);
+    }
   }
 
   if (isValidDateParam(from)) {
@@ -124,7 +136,7 @@ export default async function ExpensesPage({
     filteredExpenses = filteredExpenses.filter((e) => e.weekly_reports?.workflow_status !== "paid");
   }
 
-  const hasFilters = Boolean(q || status || category || currency || reportId || from || to);
+  const hasFilters = Boolean(q || status || category || currency || reportId || reportName || from || to);
 
   return (
     <div className="space-y-5">
@@ -182,6 +194,13 @@ export default async function ExpensesPage({
                 );
               })}
             </select>
+            <input
+              type="text"
+              name="reportName"
+              defaultValue={reportName}
+              placeholder="Buscar por nombre de rendicion..."
+              className="input w-full"
+            />
             <div className="grid grid-cols-2 gap-2 sm:col-span-2 lg:col-span-1">
               <input type="date" name="from" defaultValue={from} className="input w-full" />
               <input type="date" name="to" defaultValue={to} className="input w-full" />
