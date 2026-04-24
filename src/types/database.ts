@@ -14,6 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      advances: {
+        Row: {
+          advance_date: string
+          approved_at: string | null
+          approved_by: string | null
+          approver_id: string | null
+          created_at: string
+          created_report_id: string | null
+          currency: string
+          description: string | null
+          id: string
+          paid_at: string | null
+          paid_by: string | null
+          payment_date: string | null
+          payment_receipt_path: string | null
+          payment_receipt_url: string | null
+          rejection_reason: string | null
+          requested_amount: number
+          status: string
+          submitted_at: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          advance_date: string
+          approved_at?: string | null
+          approved_by?: string | null
+          approver_id?: string | null
+          created_at?: string
+          created_report_id?: string | null
+          currency: string
+          description?: string | null
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_date?: string | null
+          payment_receipt_path?: string | null
+          payment_receipt_url?: string | null
+          rejection_reason?: string | null
+          requested_amount: number
+          status?: string
+          submitted_at?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          advance_date?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          approver_id?: string | null
+          created_at?: string
+          created_report_id?: string | null
+          currency?: string
+          description?: string | null
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_date?: string | null
+          payment_receipt_path?: string | null
+          payment_receipt_url?: string | null
+          rejection_reason?: string | null
+          requested_amount?: number
+          status?: string
+          submitted_at?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advances_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advances_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advances_created_report_id_fkey"
+            columns: ["created_report_id"]
+            isOneToOne: true
+            referencedRelation: "weekly_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advances_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           admin_notes: string | null
@@ -373,7 +481,12 @@ export type Database = {
           payment_receipt_url: string | null
           payment_date: string | null
           amount_paid: number | null
+          payment_currency: string | null
           payment_destination: string | null
+          advance_id: string | null
+          advance_amount_usd: number | null
+          settlement_direction: string | null
+          settlement_amount_usd: number | null
         }
         Insert: {
           budget_max?: number | null
@@ -396,7 +509,12 @@ export type Database = {
           payment_receipt_url?: string | null
           payment_date?: string | null
           amount_paid?: number | null
+          payment_currency?: string | null
           payment_destination?: string | null
+          advance_id?: string | null
+          advance_amount_usd?: number | null
+          settlement_direction?: string | null
+          settlement_amount_usd?: number | null
         }
         Update: {
           budget_max?: number | null
@@ -419,9 +537,21 @@ export type Database = {
           payment_receipt_url?: string | null
           payment_date?: string | null
           amount_paid?: number | null
+          payment_currency?: string | null
           payment_destination?: string | null
+          advance_id?: string | null
+          advance_amount_usd?: number | null
+          settlement_direction?: string | null
+          settlement_amount_usd?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "weekly_reports_advance_id_fkey"
+            columns: ["advance_id"]
+            isOneToOne: true
+            referencedRelation: "advances"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "weekly_reports_closed_by_fkey"
             columns: ["closed_by"]
