@@ -10,6 +10,7 @@ import { CloseReportButton } from "@/components/reports/CloseReportButton";
 import { NotifyReviewButton } from "@/components/reports/NotifyReviewButton";
 import { DeleteExpenseButton } from "@/components/admin/DeleteExpenseButton";
 import { DeleteReportButton } from "@/components/admin/DeleteReportButton";
+import { approveReportAction } from "@/app/(dashboard)/reports/[id]/approveReportAction";
 import { toUSD, totalInUSD, fmt } from "@/lib/currency";
 import type { Tables } from "@/types/database";
 
@@ -87,6 +88,11 @@ export default async function AdminReportDetailPage({ params }: Props) {
   const reviewingCount = expenseList.filter((e) => e.status === "reviewing").length;
   const approvedCount  = expenseList.filter((e) => e.status === "approved").length;
   const rejectedCount  = expenseList.filter((e) => e.status === "rejected").length;
+  const allExpensesApproved =
+    expenseList.length > 0 && expenseList.every((e) => e.status === "approved");
+  const canManualFinalizeReport =
+    allExpensesApproved &&
+    (workflowStatus === "submitted" || workflowStatus === "needs_correction");
 
   const budgetMax     = report.budget_max ? Number(report.budget_max) : null;
   const budgetOverrun = budgetMax && totalUSD !== null ? totalUSD > budgetMax : false;
@@ -95,7 +101,7 @@ export default async function AdminReportDetailPage({ params }: Props) {
     <div className="w-full max-w-full space-y-5">
       {/* Encabezado */}
       <div className="space-y-3">
-        <BackButton href="/admin/reports" />
+        <BackButton href="/dashboard/admin/reports" />
 
         <div className="min-w-0">
           <h1 className="page-title">
@@ -140,6 +146,17 @@ export default async function AdminReportDetailPage({ params }: Props) {
           >
             Exportar Excel
           </a>
+          {canManualFinalizeReport && (
+            <form action={approveReportAction} className="inline">
+              <input type="hidden" name="reportId" value={report.id} />
+              <button
+                type="submit"
+                className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
+              >
+                Aprobar rendición (cerrar)
+              </button>
+            </form>
+          )}
           {isOpen && (
             <CloseReportButton
               reportId={report.id}
@@ -284,6 +301,7 @@ export default async function AdminReportDetailPage({ params }: Props) {
                       <ExpenseAdminActions
                         expenseId={expense.id}
                         currentStatus={expense.status ?? "pending"}
+                        reportId={report.id}
                       />
                       <DeleteExpenseButton
                         expenseId={expense.id}

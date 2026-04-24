@@ -4,15 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { tryAutoFinalizeReportAfterAllExpensesApprovedAction } from "@/app/(dashboard)/reports/[id]/approveReportAction";
 
 type Action = "approve" | "reject" | "reviewing";
 
 interface ExpenseAdminActionsProps {
   expenseId: string;
   currentStatus: string;
+  /** Si se informa, al aprobar el último gasto se cierra la rendición (workflow approved) automáticamente. */
+  reportId?: string;
 }
 
-export function ExpenseAdminActions({ expenseId, currentStatus }: ExpenseAdminActionsProps) {
+export function ExpenseAdminActions({ expenseId, currentStatus, reportId }: ExpenseAdminActionsProps) {
   const router   = useRouter();
   const supabase = createSupabaseBrowserClient();
 
@@ -64,6 +67,16 @@ export function ExpenseAdminActions({ expenseId, currentStatus }: ExpenseAdminAc
       reviewing: "Gasto marcado en revisión.",
     };
     toast.success(messages[action]);
+
+    if (action === "approve" && reportId) {
+      const finalize = await tryAutoFinalizeReportAfterAllExpensesApprovedAction(reportId);
+      if (finalize.finalized) {
+        toast.success("Rendición aprobada: quedó cerrada para pago.");
+      } else if (!finalize.ok && finalize.error) {
+        toast.error(finalize.error);
+      }
+    }
+
     setPendingAction(null);
     setNote("");
     router.refresh();
