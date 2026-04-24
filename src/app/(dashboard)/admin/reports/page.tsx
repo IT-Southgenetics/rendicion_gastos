@@ -31,7 +31,7 @@ export default async function AdminReportsPage({
   const countryFilter = params.country
     ? params.country.split(",").map((s) => s.trim()).filter(Boolean)
     : null;
-  const reportNameFilter = (params.reportName ?? "").trim().toLowerCase();
+  const reportNameFilter = (params.reportName ?? "").trim();
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
@@ -51,8 +51,8 @@ export default async function AdminReportsPage({
     .order("created_at", { ascending: false });
 
   const reports = (rawReports ?? []).filter((r) => {
-    const title = (r.title ?? "").toLowerCase();
-    if (reportNameFilter && !title.includes(reportNameFilter)) return false;
+    const title = (r.title ?? "").trim();
+    if (reportNameFilter && title !== reportNameFilter) return false;
     if (!countryFilter?.length) return true;
     const user = r.profiles as { full_name?: string; email?: string; country?: string } | null;
     const country = user?.country ?? "";
@@ -97,13 +97,26 @@ export default async function AdminReportsPage({
       <Suspense fallback={null}>
         <div className="space-y-3">
           <form method="get" className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              type="text"
+            <select
               name="reportName"
               defaultValue={params.reportName ?? ""}
-              placeholder="Buscar por nombre de rendicion..."
               className="input w-full sm:max-w-sm"
-            />
+            >
+              <option value="">Rendicion (todas)</option>
+              {Array.from(
+                new Set(
+                  (rawReports ?? [])
+                    .map((report) => (report.title ?? "").trim())
+                    .filter((title) => title.length > 0),
+                ),
+              )
+                .sort((a, b) => a.localeCompare(b, "es"))
+                .map((title) => (
+                  <option key={title} value={title}>
+                    {title}
+                  </option>
+                ))}
+            </select>
             {countryFilter?.length ? (
               <input type="hidden" name="country" value={countryFilter.join(",")} />
             ) : null}
@@ -114,7 +127,7 @@ export default async function AdminReportsPage({
               href={countryFilter?.length ? `/dashboard/admin/reports?country=${encodeURIComponent(countryFilter.join(","))}` : "/dashboard/admin/reports"}
               className="inline-flex w-full items-center justify-center rounded-full border border-[#e5e2ea] bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8] sm:w-auto"
             >
-              Limpiar nombre
+              Limpiar filtro
             </Link>
           </form>
           <CountryFilter basePath="/dashboard/admin/reports" />
