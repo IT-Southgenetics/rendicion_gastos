@@ -5,6 +5,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { CountryFilter } from "@/components/admin/CountryFilter";
+import { totalInCurrency } from "@/lib/currency";
 
 const WORKFLOW_BADGE: Record<string, { label: string; classes: string }> = {
   paid:             { label: "Pagada",              classes: "bg-blue-100 text-blue-700" },
@@ -58,6 +59,35 @@ export default async function AdminReportsPage({
     const country = user?.country ?? "";
     return country && countryFilter.includes(country);
   });
+
+  const reportIds = reports.map((r) => r.id);
+  const [{ data: expenseRows }, { data: presetRows }] = await Promise.all([
+    reportIds.length
+      ? supabase.from("expenses").select("report_id, amount, currency").in("report_id", reportIds)
+      : Promise.resolve({ data: [] as { report_id: string; amount: number; currency: string | null }[] }),
+    supabase.from("exchange_rates").select("currency_code, rate_to_usd"),
+  ]);
+
+  const globalPresets: Record<string, number> = {};
+  for (const p of (presetRows ?? []) as { currency_code: string; rate_to_usd: number }[]) {
+    globalPresets[p.currency_code] = Number(p.rate_to_usd);
+  }
+
+  const expensesByReport = new Map<string, { amount: number; currency: string | null }[]>();
+  for (const row of expenseRows ?? []) {
+    const list = expensesByReport.get(row.report_id) ?? [];
+    list.push({ amount: Number(row.amount), currency: row.currency });
+    expensesByReport.set(row.report_id, list);
+  }
+
+  function totalForReportList(r: (typeof reports)[number]) {
+    const budgetCurrency = r.budget_currency ?? "USD";
+    const reportRates = (r.exchange_rates ?? {}) as Record<string, number>;
+    const effectiveRates = { ...globalPresets, ...reportRates };
+    const list = expensesByReport.get(r.id) ?? [];
+    const converted = totalInCurrency(list, budgetCurrency, effectiveRates);
+    return { amount: converted, currency: budgetCurrency };
+  }
 
   const pendingCount = reports.filter((r) => r.status === "open").length;
 
@@ -154,6 +184,7 @@ export default async function AdminReportsPage({
                 reports.map((r) => {
                   const user = r.profiles as { full_name: string; email: string; country?: string } | null;
                   const expenseCount = (r.expenses as { count: number }[])?.[0]?.count ?? 0;
+                  const { amount: listTotal, currency: listCurrency } = totalForReportList(r);
                   const badge = getStatusBadge(r.status ?? "open", r.workflow_status ?? "draft");
                   return (
                     <tr key={r.id} className="border-t border-[#f0ecf4] transition-colors hover:bg-[#faf7fd]">
@@ -179,11 +210,13 @@ export default async function AdminReportsPage({
                         {new Date(r.week_end + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 align-middle text-right text-sm font-semibold">
-                        {Number(r.total_amount ?? 0).toLocaleString("es-UY", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}{" "}
-                        <span className="text-xs font-normal text-[var(--color-text-muted)]">USD</span>
+                        {listTotal !== null
+                          ? listTotal.toLocaleString("es-UY", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          : "—"}{" "}
+                        <span className="text-xs font-normal text-[var(--color-text-muted)]">{listCurrency}</span>
                       </td>
                       <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
                         {expenseCount} {expenseCount === 1 ? "gasto" : "gastos"}
@@ -213,6 +246,7 @@ export default async function AdminReportsPage({
             reports.map((r) => {
               const user = r.profiles as { full_name: string; email: string; country?: string } | null;
               const expenseCount = (r.expenses as { count: number }[])?.[0]?.count ?? 0;
+              const { amount: listTotal, currency: listCurrency } = totalForReportList(r);
               const badge = getStatusBadge(r.status ?? "open", r.workflow_status ?? "draft");
               return (
                 <Link
@@ -248,12 +282,14 @@ export default async function AdminReportsPage({
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                      {Number(r.total_amount ?? 0).toLocaleString("es-UY", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {listTotal !== null
+                        ? listTotal.toLocaleString("es-UY", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : "—"}
                     </p>
-                    <p className="text-[0.6rem] text-[var(--color-text-muted)]">USD</p>
+                    <p className="text-[0.6rem] text-[var(--color-text-muted)]">{listCurrency}</p>
                   </div>
                 </Link>
               );

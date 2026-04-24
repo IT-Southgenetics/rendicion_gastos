@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database";
+import { totalInCurrency } from "@/lib/currency";
 
 type WeeklyReport = Tables<"weekly_reports">;
 
@@ -67,12 +68,19 @@ export default async function ReportsPage() {
     .eq("id", session.user.id)
     .single();
 
-  const baseQuery = supabase
-    .from("weekly_reports")
-    .select("*, expenses(count)")
-    .order("week_start", { ascending: false });
+  const [{ data: reports }, { data: presetRows }] = await Promise.all([
+    supabase
+      .from("weekly_reports")
+      .select("*, expenses(amount, currency)")
+      .eq("user_id", session.user.id)
+      .order("week_start", { ascending: false }),
+    supabase.from("exchange_rates").select("currency_code, rate_to_usd"),
+  ]);
 
-  const { data: reports } = await baseQuery.eq("user_id", session.user.id);
+  const globalPresets: Record<string, number> = {};
+  for (const p of (presetRows ?? []) as { currency_code: string; rate_to_usd: number }[]) {
+    globalPresets[p.currency_code] = Number(p.rate_to_usd);
+  }
 
   return (
     <div className="space-y-5">
@@ -88,8 +96,17 @@ export default async function ReportsPage() {
 
       {reports && reports.length > 0 ? (
         <div className="space-y-2">
-          {reports.map((report: WeeklyReport & { expenses: { count: number }[] }) => {
-            const expenseCount = report.expenses?.[0]?.count ?? 0;
+          {reports.map((report: WeeklyReport & { expenses: { amount: number; currency: string | null }[] }) => {
+            const expenseRows = report.expenses ?? [];
+            const expenseCount = expenseRows.length;
+            const budgetCurrency = report.budget_currency ?? "USD";
+            const reportRates = (report.exchange_rates ?? {}) as Record<string, number>;
+            const effectiveRates = { ...globalPresets, ...reportRates };
+            const listTotal = totalInCurrency(
+              expenseRows.map((e) => ({ amount: Number(e.amount), currency: e.currency })),
+              budgetCurrency,
+              effectiveRates,
+            );
             const startDate = new Date(report.week_start + "T12:00:00");
             const endDate   = new Date(report.week_end   + "T12:00:00");
             return (
@@ -128,11 +145,13 @@ export default async function ReportsPage() {
                     <span>{expenseCount} {expenseCount === 1 ? "gasto" : "gastos"}</span>
                     <span>·</span>
                     <span className="font-medium text-[var(--color-text-primary)]">
-                      {Number(report.total_amount ?? 0).toLocaleString("es-UY", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      UYU
+                      {listTotal !== null
+                        ? listTotal.toLocaleString("es-UY", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : "—"}{" "}
+                      {budgetCurrency}
                     </span>
                   </div>
                   {report.notes && (
