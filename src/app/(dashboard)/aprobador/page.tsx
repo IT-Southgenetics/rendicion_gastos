@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
+import { AdvanceStatusBadge } from "@/components/advances/AdvanceStatusBadge";
 
 const ROLE_LABELS: Record<string, string> = {
   employee:   "Empleado",
@@ -52,6 +53,15 @@ export default async function AprobadorHomePage() {
     .in("user_id", employeeIds)
     .in("workflow_status", ["submitted", "needs_correction", "approved", "paid"])
     .order("created_at", { ascending: false });
+
+  const { data: advanceRequests } = await supabase
+    .from("advances")
+    .select("id, user_id, title, advance_date, requested_amount, currency, status, profiles!advances_user_id_fkey(full_name, email)")
+    .in("user_id", employeeIds)
+    .in("status", ["submitted", "approved", "rejected", "paid"])
+    .order("created_at", { ascending: false })
+    .limit(12);
+  const advanceRows = advanceRequests ?? [];
 
   // Group reports by employee
   const reportsByEmployee: Record<string, typeof reports> = {};
@@ -139,6 +149,44 @@ export default async function AprobadorHomePage() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="card w-full overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#f0ecf4] px-4 py-3">
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Solicitudes de anticipo</h2>
+            <p className="text-[0.7rem] text-[var(--color-text-muted)]">Revisa anticipos de tus personas asignadas.</p>
+          </div>
+          <span className="rounded-full bg-[#f5f1f8] px-2 py-0.5 text-[0.65rem] font-semibold text-[var(--color-text-muted)]">
+            {advanceRows.length} solicitudes
+          </span>
+        </div>
+        {advanceRows.length > 0 ? (
+          <div className="divide-y divide-[#f0ecf4]">
+            {advanceRows.map((advance) => {
+              const owner = advance.profiles as { full_name: string; email: string } | null;
+              return (
+                <Link
+                  key={advance.id}
+                  href={`/dashboard/aprobador/advances/${advance.id}`}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[#faf7fd]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{advance.title}</p>
+                    <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">
+                      {owner?.full_name ?? "—"} · {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY")} · {advance.currency} {Number(advance.requested_amount).toFixed(2)}
+                    </p>
+                  </div>
+                  <AdvanceStatusBadge status={advance.status ?? "draft"} />
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-4 py-8 text-center text-sm text-[var(--color-text-muted)]">
+            No hay solicitudes de anticipo para revisar.
+          </div>
+        )}
       </div>
     </div>
   );
