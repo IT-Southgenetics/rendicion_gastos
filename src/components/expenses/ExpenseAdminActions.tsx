@@ -40,15 +40,21 @@ export function ExpenseAdminActions({ expenseId, currentStatus }: ExpenseAdminAc
       admin_notes:      action === "reviewing" ? note.trim() || null : null,
     };
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("expenses")
       .update(updates)
-      .eq("id", expenseId);
+      .eq("id", expenseId)
+      .select("id")
+      .limit(1);
 
     setSaving(false);
 
     if (error) {
       toast.error(`Error al actualizar: ${error.message}`);
+      return;
+    }
+    if (!data || data.length === 0) {
+      toast.error("No se pudo actualizar el gasto. Verificá permisos de admin (RLS).");
       return;
     }
 
