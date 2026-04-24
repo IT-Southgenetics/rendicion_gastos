@@ -1,12 +1,25 @@
 'use client';
+import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Receipt, FileSpreadsheet, Users, Eye, LogOut, CreditCard } from "lucide-react";
+import { LayoutDashboard, Receipt, FileSpreadsheet, Users, Eye, LogOut, CreditCard, HandCoins } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const baseNavItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  adminOnly: boolean;
+  supervisorOnly: boolean;
+  viewerOnly: boolean;
+  pagadorOnly?: boolean;
+  employeeOnly?: boolean;
+};
+
+const baseNavItems: NavItem[] = [
   { href: "/dashboard",            label: "Resumen",     icon: LayoutDashboard, adminOnly: false, supervisorOnly: false, viewerOnly: false },
   { href: "/dashboard/reports",    label: "Rendiciones", icon: FileSpreadsheet, adminOnly: false, supervisorOnly: false, viewerOnly: false },
+  { href: "/dashboard/advances",   label: "Anticipos",   icon: HandCoins,       adminOnly: false, supervisorOnly: false, viewerOnly: false, employeeOnly: true },
   { href: "/dashboard/expenses",   label: "Histórico",   icon: Receipt,         adminOnly: false, supervisorOnly: false, viewerOnly: false },
   { href: "/dashboard/aprobador",  label: "Aprobaciones",icon: Eye,             adminOnly: false, supervisorOnly: true,  viewerOnly: false },
   { href: "/dashboard/chusma-view",label: "Auditoría",   icon: Eye,             adminOnly: false, supervisorOnly: false, viewerOnly: true  },
@@ -33,7 +46,8 @@ export function Sidebar({
     if (item.adminOnly)       return isAdmin;
     if (item.supervisorOnly)  return isSupervisor;
     if (item.viewerOnly)      return isViewer;
-    if ((item as any).pagadorOnly)     return isPagador;
+    if (item.pagadorOnly)     return isPagador;
+    if (item.employeeOnly)    return !isSupervisor && !isViewer && !isPagador;
     return true;
   });
 
