@@ -141,6 +141,7 @@ export default async function AdminReportsPage({
             <thead className="bg-[#f5f1f8] text-xs uppercase text-[var(--color-text-muted)]">
               <tr>
                 <th className="px-4 py-3 font-medium">Empleado</th>
+                <th className="px-4 py-3 font-medium">Rendicion</th>
                 <th className="hidden px-4 py-3 font-medium lg:table-cell">País</th>
                 <th className="px-4 py-3 font-medium">Período</th>
                 <th className="px-4 py-3 font-medium text-right">Total</th>
@@ -162,11 +163,11 @@ export default async function AdminReportsPage({
                             {user?.full_name ?? "—"}
                           </p>
                           <p className="text-[0.7rem] text-[var(--color-text-muted)]">{user?.email}</p>
-                          {r.title && (
-                            <p className="max-w-[180px] truncate text-[0.7rem] font-medium text-[var(--color-primary)]">
-                              {r.title}
-                            </p>
-                          )}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 align-middle text-xs text-[var(--color-primary)]">
+                        <Link href={`/dashboard/admin/reports/${r.id}`} className="max-w-[180px] truncate font-medium hover:underline">
+                          {r.title?.trim() || "—"}
                         </Link>
                       </td>
                       <td className="hidden px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] lg:table-cell">
@@ -197,7 +198,7 @@ export default async function AdminReportsPage({
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
+                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
                     No hay rendiciones aún.
                   </td>
                 </tr>
