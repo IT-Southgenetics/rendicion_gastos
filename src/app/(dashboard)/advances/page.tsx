@@ -17,7 +17,7 @@ export default async function AdvancesPage() {
 
   const query = supabase
     .from("advances")
-    .select("id, title, advance_date, requested_amount, currency, status, created_at")
+    .select("id, title, advance_date, advance_end_date, requested_amount, currency, status, created_at")
     .order("created_at", { ascending: false });
 
   if (role !== "admin") {
@@ -44,7 +44,7 @@ export default async function AdvancesPage() {
             <thead className="bg-[#f5f1f8] text-xs uppercase text-[var(--color-text-muted)]">
               <tr>
                 <th className="px-4 py-3 font-medium">Nombre</th>
-                <th className="px-4 py-3 font-medium">Fecha</th>
+                <th className="px-4 py-3 font-medium">Periodo</th>
                 <th className="px-4 py-3 font-medium text-right">Monto</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
               </tr>
@@ -60,6 +60,8 @@ export default async function AdvancesPage() {
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
                       {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
+                      {" - "}
+                      {new Date((advance.advance_end_date ?? advance.advance_date) + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right align-middle text-sm font-semibold">
                       {Number(advance.requested_amount).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
@@ -92,7 +94,11 @@ export default async function AdvancesPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{advance.title}</p>
                   <p className="text-[0.65rem] text-[var(--color-text-muted)]">
-                    {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY")} · {advance.currency} {Number(advance.requested_amount).toFixed(2)}
+                    {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY")}
+                    {" - "}
+                    {new Date((advance.advance_end_date ?? advance.advance_date) + "T12:00:00").toLocaleDateString("es-UY")}
+                    {" · "}
+                    {advance.currency} {Number(advance.requested_amount).toFixed(2)}
                   </p>
                 </div>
                 <AdvanceStatusBadge status={advance.status ?? "draft"} />

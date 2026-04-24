@@ -92,12 +92,16 @@ export async function submitNewAdvanceAction(
 
   const title = (formData.get("title") as string | null)?.trim() ?? "";
   const advanceDate = ensureDate(formData.get("advanceDate"));
+  const advanceEndDate = ensureDate(formData.get("advanceEndDate"));
   const requestedAmount = toPositiveNumber(formData.get("requestedAmount"));
   const currency = ((formData.get("currency") as string | null) ?? "USD").toUpperCase();
   const description = (formData.get("description") as string | null)?.trim() ?? null;
 
-  if (!title || !advanceDate || !requestedAmount || !VALID_CURRENCIES.has(currency as (typeof ADVANCE_CURRENCIES)[number]["value"])) {
+  if (!title || !advanceDate || !advanceEndDate || !requestedAmount || !VALID_CURRENCIES.has(currency as (typeof ADVANCE_CURRENCIES)[number]["value"])) {
     return { ok: false, error: "Completa todos los campos obligatorios del anticipo." };
+  }
+  if (advanceEndDate < advanceDate) {
+    return { ok: false, error: "La fecha de fin no puede ser menor que la fecha de inicio." };
   }
 
   const recipients = await getEmployeeAndApproverEmails(supabase, session.user.id);
@@ -113,6 +117,7 @@ export async function submitNewAdvanceAction(
       approver_id: recipients.approverId,
       title,
       advance_date: advanceDate,
+      advance_end_date: advanceEndDate,
       requested_amount: requestedAmount,
       currency,
       description,
@@ -291,7 +296,7 @@ export async function payAdvanceAction(
 
   const { data: advance, error: advanceError } = await supabase
     .from("advances")
-    .select("id, user_id, title, advance_date, requested_amount, currency, status, created_report_id, description")
+    .select("id, user_id, title, advance_date, advance_end_date, requested_amount, currency, status, created_report_id, description")
     .eq("id", advanceId)
     .single();
 
@@ -345,10 +350,11 @@ export async function payAdvanceAction(
       user_id: advance.user_id,
       title: reportTitle,
       week_start: advance.advance_date,
-      week_end: advance.advance_date,
+      week_end: advance.advance_end_date ?? advance.advance_date,
       status: "open",
       workflow_status: "draft",
       notes: `Rendicion creada automaticamente desde anticipo ${advance.id}.`,
+      advance_amount: Number(advance.requested_amount),
       budget_max: Number(advance.requested_amount),
       budget_currency: advance.currency,
       exchange_rates: Object.keys(exchangeRates).length ? exchangeRates : null,

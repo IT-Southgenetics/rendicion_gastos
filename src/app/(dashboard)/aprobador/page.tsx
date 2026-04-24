@@ -28,23 +28,6 @@ export default async function AprobadorHomePage() {
     id: string; full_name: string; email: string; role: string; department: string | null;
   }).filter(Boolean);
 
-  if (employees.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="page-title">Aprobaciones</h1>
-          <p className="page-subtitle">Tus empleados asignados para aprobar.</p>
-        </div>
-        <div className="card p-10 text-center space-y-2">
-          <p className="text-2xl">👁</p>
-          <p className="text-sm text-[var(--color-text-muted)]">
-            No tenés empleados asignados aún. El administrador debe asignarte empleados a supervisar.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Get reports for all supervised employees
   const employeeIds = employees.map((e) => e.id);
   const { data: reports } = await supabase
@@ -56,12 +39,13 @@ export default async function AprobadorHomePage() {
 
   const { data: advanceRequests } = await supabase
     .from("advances")
-    .select("id, user_id, title, advance_date, requested_amount, currency, status, profiles!advances_user_id_fkey(full_name, email)")
-    .in("user_id", employeeIds)
+    .select("id, user_id, title, advance_date, requested_amount, currency, status, approver_id, profiles!advances_user_id_fkey(full_name, email)")
+    .eq("approver_id", session.user.id)
     .in("status", ["submitted", "approved", "rejected", "paid"])
     .order("created_at", { ascending: false })
     .limit(12);
   const advanceRows = advanceRequests ?? [];
+  const pendingAdvanceCount = advanceRows.filter((advance) => advance.status === "submitted").length;
 
   // Group reports by employee
   const reportsByEmployee: Record<string, typeof reports> = {};
@@ -79,6 +63,7 @@ export default async function AprobadorHomePage() {
         </p>
       </div>
 
+      {employees.length > 0 ? (
       <div className="grid w-full gap-4 sm:grid-cols-2">
         {employees.map((emp) => {
           const empReports = reportsByEmployee[emp.id] ?? [];
@@ -150,6 +135,14 @@ export default async function AprobadorHomePage() {
           );
         })}
       </div>
+      ) : (
+        <div className="card p-10 text-center space-y-2">
+          <p className="text-2xl">👁</p>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            No tenés empleados asignados aún. El administrador debe asignarte empleados a supervisar.
+          </p>
+        </div>
+      )}
 
       <div className="card w-full overflow-hidden">
         <div className="flex items-center justify-between border-b border-[#f0ecf4] px-4 py-3">
@@ -157,9 +150,14 @@ export default async function AprobadorHomePage() {
             <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Solicitudes de anticipo</h2>
             <p className="text-[0.7rem] text-[var(--color-text-muted)]">Revisa anticipos de tus personas asignadas.</p>
           </div>
-          <span className="rounded-full bg-[#f5f1f8] px-2 py-0.5 text-[0.65rem] font-semibold text-[var(--color-text-muted)]">
-            {advanceRows.length} solicitudes
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[0.65rem] font-semibold text-amber-700">
+              {pendingAdvanceCount} pendientes
+            </span>
+            <span className="rounded-full bg-[#f5f1f8] px-2 py-0.5 text-[0.65rem] font-semibold text-[var(--color-text-muted)]">
+              {advanceRows.length} solicitudes
+            </span>
+          </div>
         </div>
         {advanceRows.length > 0 ? (
           <div className="divide-y divide-[#f0ecf4]">

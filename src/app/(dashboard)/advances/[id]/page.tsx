@@ -40,7 +40,9 @@ export default async function AdvanceDetailPage({ params }: Props) {
           <div>
             <h1 className="text-lg font-bold text-[var(--color-text-primary)]">{advance.title}</h1>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Fecha solicitada: {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })}
+              Periodo solicitado: {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })}
+              {" - "}
+              {new Date((advance.advance_end_date ?? advance.advance_date) + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })}
             </p>
           </div>
           <AdvanceStatusBadge status={advance.status ?? "draft"} />

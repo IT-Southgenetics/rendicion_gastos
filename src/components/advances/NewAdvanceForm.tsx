@@ -53,17 +53,31 @@ export function NewAdvanceForm() {
         />
       </div>
 
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium text-[var(--color-text-primary)]">
-          Fecha de anticipo <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="date"
-          name="advanceDate"
-          defaultValue={today}
-          required
-          className="input"
-        />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-[var(--color-text-primary)]">
+            Fecha de inicio <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="advanceDate"
+            defaultValue={today}
+            required
+            className="input"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-[var(--color-text-primary)]">
+            Fecha de fin <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="advanceEndDate"
+            defaultValue={today}
+            required
+            className="input"
+          />
+        </div>
       </div>
 
       <div className="space-y-1.5">

@@ -8,14 +8,14 @@ import { WeeklyReportsRealtimeRefresher } from "@/components/realtime/WeeklyRepo
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
   let isAdmin      = false;
   let isSupervisor = false;
   let isViewer     = false;
   let isPagador    = false;
-  if (session) {
-    const me = await getMyProfile(supabase, session);
+  if (user) {
+    const me = await getMyProfile(supabase, { user } as any);
     const role = me?.role ?? null;
 
     isAdmin      = role === "admin";

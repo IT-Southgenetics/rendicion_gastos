@@ -76,7 +76,9 @@ export default async function AprobadorAdvanceDetailPage({ params }: Props) {
             {advance.currency} {Number(advance.requested_amount).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <p className="mt-1 text-[0.7rem] text-[var(--color-text-muted)]">
-            Fecha de anticipo: {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY")}
+            Periodo: {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY")}
+            {" - "}
+            {new Date((advance.advance_end_date ?? advance.advance_date) + "T12:00:00").toLocaleDateString("es-UY")}
           </p>
         </div>
 
@@ -95,34 +97,39 @@ export default async function AprobadorAdvanceDetailPage({ params }: Props) {
         )}
 
         {isPendingApproval && (
-          <div className="grid gap-3 border-t border-[#f0ecf4] pt-4 sm:grid-cols-2">
-            <form action={approveAdvanceAction} className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div className="grid gap-2 border-t border-[#f0ecf4] pt-3 sm:grid-cols-2">
+            <form action={approveAdvanceAction} className="space-y-1 rounded-md border border-emerald-200 bg-emerald-50 p-2">
               <input type="hidden" name="advanceId" value={advance.id} />
-              <p className="text-xs font-semibold text-emerald-700">Aprobar solicitud</p>
+              <p className="text-[0.65rem] font-semibold text-emerald-700">Aprobar solicitud</p>
               <button
                 type="submit"
-                className="inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-2 py-1 text-[0.65rem] font-semibold text-white hover:bg-emerald-700"
               >
                 Aprobar
               </button>
             </form>
-
-            <form action={rejectAdvanceAction} className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-3">
-              <input type="hidden" name="advanceId" value={advance.id} />
-              <label className="block text-xs font-semibold text-red-700">Motivo de rechazo</label>
-              <textarea
-                name="rejectionReason"
-                required
-                className="input min-h-[80px] border-red-200 bg-white"
-                placeholder="Explica por que se rechaza la solicitud."
-              />
-              <button
-                type="submit"
-                className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
-              >
-                Rechazar
-              </button>
-            </form>
+            <details className="rounded-md border border-red-200 bg-red-50 p-2">
+              <summary className="list-none">
+                <p className="mb-1 text-[0.65rem] font-semibold text-red-700">Rechazar solicitud</p>
+                <span className="inline-flex cursor-pointer items-center justify-center rounded-full bg-red-600 px-2 py-1 text-[0.65rem] font-semibold text-white hover:bg-red-700">Rechazar</span>
+              </summary>
+              <form action={rejectAdvanceAction} className="mt-2 space-y-1.5">
+                <input type="hidden" name="advanceId" value={advance.id} />
+                <label className="block text-[0.65rem] font-semibold text-red-700">Motivo de rechazo</label>
+                <textarea
+                  name="rejectionReason"
+                  required
+                  className="input min-h-[64px] border-red-200 bg-white text-xs"
+                  placeholder="Explica por que se rechaza la solicitud."
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-full bg-red-600 px-2 py-1 text-[0.65rem] font-semibold text-white hover:bg-red-700"
+                >
+                  Confirmar rechazo
+                </button>
+              </form>
+            </details>
           </div>
         )}
       </div>

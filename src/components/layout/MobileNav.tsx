@@ -57,44 +57,44 @@ export function MobileNav({
   }
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 gap-1 border-t border-[#e5e2ea] bg-white/95 px-2 py-2.5 lg:hidden sm:grid-cols-6"
-    >
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isRootDashboard = item.href === "/dashboard";
-        const active = isRootDashboard
-          ? pathname === "/dashboard"
-          : pathname === item.href || pathname.startsWith(item.href + "/");
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex min-w-0 flex-col items-center text-[10px] sm:text-xs ${
-              active ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
-            }`}
-          >
-            <span
-              className={`mb-1 flex h-8 w-8 items-center justify-center rounded-full ${
-                active ? "bg-[var(--color-bg)]" : ""
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-            </span>
-            <span className="max-w-full truncate">{item.label}</span>
-          </Link>
-        );
-      })}
-
+    <>
       <button
         onClick={handleSignOut}
-        className="flex min-w-0 flex-col items-center text-[10px] text-[var(--color-text-muted)] sm:text-xs"
+        className="fixed right-3 top-3 z-40 inline-flex items-center gap-1 rounded-full border border-[#e5e2ea] bg-white/95 px-2.5 py-1.5 text-[0.65rem] font-medium text-[var(--color-text-muted)] shadow-sm lg:hidden"
       >
-        <span className="mb-1 flex h-8 w-8 items-center justify-center rounded-full">
-          <LogOut className="h-4 w-4" />
-        </span>
+        <LogOut className="h-3.5 w-3.5" />
         <span>Salir</span>
       </button>
-    </nav>
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 gap-1 border-t border-[#e5e2ea] bg-white/95 px-2 py-2.5 lg:hidden sm:grid-cols-6"
+      >
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isRootDashboard = item.href === "/dashboard";
+          const active = isRootDashboard
+            ? pathname === "/dashboard"
+            : pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex min-w-0 flex-col items-center text-[10px] sm:text-xs ${
+                active ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
+              }`}
+            >
+              <span
+                className={`mb-1 flex h-8 w-8 items-center justify-center rounded-full ${
+                  active ? "bg-[var(--color-bg)]" : ""
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="max-w-full truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

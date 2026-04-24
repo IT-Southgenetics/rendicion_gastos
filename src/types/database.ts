@@ -17,6 +17,7 @@ export type Database = {
       advances: {
         Row: {
           advance_date: string
+          advance_end_date: string | null
           approved_at: string | null
           approved_by: string | null
           approver_id: string | null
@@ -40,6 +41,7 @@ export type Database = {
         }
         Insert: {
           advance_date: string
+          advance_end_date?: string | null
           approved_at?: string | null
           approved_by?: string | null
           approver_id?: string | null
@@ -63,6 +65,7 @@ export type Database = {
         }
         Update: {
           advance_date?: string
+          advance_end_date?: string | null
           approved_at?: string | null
           approved_by?: string | null
           approver_id?: string | null
@@ -484,6 +487,7 @@ export type Database = {
           payment_currency: string | null
           payment_destination: string | null
           advance_id: string | null
+          advance_amount: number | null
           advance_amount_usd: number | null
           settlement_direction: string | null
           settlement_amount_usd: number | null
@@ -512,6 +516,7 @@ export type Database = {
           payment_currency?: string | null
           payment_destination?: string | null
           advance_id?: string | null
+          advance_amount?: number | null
           advance_amount_usd?: number | null
           settlement_direction?: string | null
           settlement_amount_usd?: number | null
@@ -540,6 +545,7 @@ export type Database = {
           payment_currency?: string | null
           payment_destination?: string | null
           advance_id?: string | null
+          advance_amount?: number | null
           advance_amount_usd?: number | null
           settlement_direction?: string | null
           settlement_amount_usd?: number | null
