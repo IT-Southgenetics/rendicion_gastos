@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateExcelExport } from "@/lib/excelGenerator";
+import { calculateSettlement, totalInUSD } from "@/lib/currency";
 
 export type PayReportState =
   | { ok: true }
@@ -80,6 +81,38 @@ export async function payReportAction(
     return { ok: false as const, error: "Monto pagado inválido." };
   }
 
+  // Obtener datos del reporte antes de registrar pago (incluye anticipo vinculado).
+  const { data: reportBeforePayment } = await supabase
+    .from("weekly_reports")
+    .select("id, user_id, odoo_move_id, exchange_rates, advance_amount_usd")
+    .eq("id", reportId)
+    .single();
+
+  // Calcular liquidacion neta cuando existe anticipo.
+  let settlementDirection: "company_pays_employee" | "employee_returns_company" | "settled_zero" | null = null;
+  let settlementAmountUsd: number | null = null;
+  if (typeof reportBeforePayment?.advance_amount_usd === "number") {
+    const { data: reportExpenses } = await supabase
+      .from("expenses")
+      .select("amount, currency, status")
+      .eq("report_id", reportId);
+
+    const nonRejectedExpenses = (reportExpenses ?? []).filter((expense) => expense.status !== "rejected");
+    const totalUsd = totalInUSD(
+      nonRejectedExpenses.map((expense) => ({
+        amount: Number(expense.amount ?? 0),
+        currency: expense.currency ?? "UYU",
+      })),
+      (reportBeforePayment.exchange_rates ?? {}) as Record<string, number>,
+    );
+
+    if (typeof totalUsd === "number") {
+      const settlement = calculateSettlement(totalUsd, Number(reportBeforePayment.advance_amount_usd));
+      settlementDirection = settlement.direction;
+      settlementAmountUsd = settlement.amountUsd;
+    }
+  }
+
   const { error: updateError } = await supabase
     .from("weekly_reports")
     .update({
@@ -89,6 +122,8 @@ export async function payReportAction(
       payment_currency: paymentCurrency,
       payment_destination: paymentDestination,
       payment_receipt_url: publicUrl,
+      settlement_direction: settlementDirection,
+      settlement_amount_usd: settlementAmountUsd,
     })
     .eq("id", reportId);
 
@@ -103,11 +138,7 @@ export async function payReportAction(
   let employeeEmail = "";
   let employeeName = "";
 
-  const { data: reportData } = await supabase
-    .from("weekly_reports")
-    .select("user_id, odoo_move_id")
-    .eq("id", reportId)
-    .single();
+  const reportData = reportBeforePayment ?? null;
 
   if (reportData?.user_id) {
     const { data: employeeData } = await supabase
@@ -208,6 +239,8 @@ export async function payReportAction(
           paymentCurrency,
           paymentDestination,
           paymentReceiptUrl: publicUrl,
+          settlementDirection,
+          settlementAmountUsd,
           employeeEmail,
           employeeName,
           pagadorEmails,
