@@ -24,13 +24,14 @@ function getStatusBadge(status: string, workflowStatus: string) {
 export default async function AdminReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ country?: string }>;
+  searchParams: Promise<{ country?: string; reportName?: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const params = await searchParams;
   const countryFilter = params.country
     ? params.country.split(",").map((s) => s.trim()).filter(Boolean)
     : null;
+  const reportNameFilter = (params.reportName ?? "").trim().toLowerCase();
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
@@ -50,6 +51,8 @@ export default async function AdminReportsPage({
     .order("created_at", { ascending: false });
 
   const reports = (rawReports ?? []).filter((r) => {
+    const title = (r.title ?? "").toLowerCase();
+    if (reportNameFilter && !title.includes(reportNameFilter)) return false;
     if (!countryFilter?.length) return true;
     const user = r.profiles as { full_name?: string; email?: string; country?: string } | null;
     const country = user?.country ?? "";
@@ -92,7 +95,30 @@ export default async function AdminReportsPage({
       </div>
 
       <Suspense fallback={null}>
-        <CountryFilter basePath="/dashboard/admin/reports" />
+        <div className="space-y-3">
+          <form method="get" className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="text"
+              name="reportName"
+              defaultValue={params.reportName ?? ""}
+              placeholder="Buscar por nombre de rendicion..."
+              className="input w-full sm:max-w-sm"
+            />
+            {countryFilter?.length ? (
+              <input type="hidden" name="country" value={countryFilter.join(",")} />
+            ) : null}
+            <button type="submit" className="btn-primary w-full text-sm sm:w-auto">
+              Buscar
+            </button>
+            <Link
+              href={countryFilter?.length ? `/dashboard/admin/reports?country=${encodeURIComponent(countryFilter.join(","))}` : "/dashboard/admin/reports"}
+              className="inline-flex w-full items-center justify-center rounded-full border border-[#e5e2ea] bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8] sm:w-auto"
+            >
+              Limpiar nombre
+            </Link>
+          </form>
+          <CountryFilter basePath="/dashboard/admin/reports" />
+        </div>
       </Suspense>
 
       <div className="card w-full overflow-hidden">
