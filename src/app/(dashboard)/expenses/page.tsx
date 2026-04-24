@@ -11,6 +11,7 @@ type SearchParams = {
   status?: string;
   category?: string;
   currency?: string;
+  reportId?: string;
   from?: string;
   to?: string;
 };
@@ -52,12 +53,27 @@ export default async function ExpensesPage({
   const status = (params.status ?? "").trim();
   const category = (params.category ?? "").trim();
   const currency = (params.currency ?? "").trim().toUpperCase();
+  const reportId = (params.reportId ?? "").trim();
   const from = (params.from ?? "").trim();
   const to = (params.to ?? "").trim();
 
+  const { data: myReports } = await supabase
+    .from("weekly_reports")
+    .select("id, title, week_start, week_end")
+    .eq("user_id", session.user.id)
+    .order("week_start", { ascending: false });
+
+  const reports = (myReports ?? []) as Array<{
+    id: string;
+    title: string | null;
+    week_start: string;
+    week_end: string;
+  }>;
+  const validReportIds = new Set(reports.map((report) => report.id));
+
   let query = supabase
     .from("expenses")
-    .select("*, weekly_reports!expenses_report_id_fkey(workflow_status)")
+    .select("*, weekly_reports!expenses_report_id_fkey(id, title, week_start, week_end, workflow_status)")
     .eq("user_id", session.user.id);
 
   if (q) {
@@ -79,6 +95,9 @@ export default async function ExpensesPage({
   if (currency) {
     query = query.eq("currency", currency as string & NonNullable<unknown>);
   }
+  if (reportId && validReportIds.has(reportId)) {
+    query = query.eq("report_id", reportId);
+  }
 
   if (isValidDateParam(from)) {
     query = query.gte("expense_date", from);
@@ -89,7 +108,15 @@ export default async function ExpensesPage({
   }
 
   const { data: expenses } = await query.order("expense_date", { ascending: false });
-  let filteredExpenses = (expenses ?? []) as (Expense & { weekly_reports: { workflow_status: string | null } | null })[];
+  let filteredExpenses = (expenses ?? []) as (Expense & {
+    weekly_reports: {
+      id: string;
+      title: string | null;
+      week_start: string;
+      week_end: string;
+      workflow_status: string | null;
+    } | null;
+  })[];
 
   if (status === "paid") {
     filteredExpenses = filteredExpenses.filter((e) => e.weekly_reports?.workflow_status === "paid");
@@ -97,7 +124,7 @@ export default async function ExpensesPage({
     filteredExpenses = filteredExpenses.filter((e) => e.weekly_reports?.workflow_status !== "paid");
   }
 
-  const hasFilters = Boolean(q || status || category || currency || from || to);
+  const hasFilters = Boolean(q || status || category || currency || reportId || from || to);
 
   return (
     <div className="space-y-5">
@@ -143,6 +170,18 @@ export default async function ExpensesPage({
                 </option>
               ))}
             </select>
+            <select name="reportId" defaultValue={reportId} className="input w-full">
+              <option value="">Rendicion (todas)</option>
+              {reports.map((report) => {
+                const periodLabel = `${new Date(report.week_start + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short" })} - ${new Date(report.week_end + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}`;
+                const label = report.title?.trim() ? `${report.title} (${periodLabel})` : periodLabel;
+                return (
+                  <option key={report.id} value={report.id}>
+                    {label}
+                  </option>
+                );
+              })}
+            </select>
             <div className="grid grid-cols-2 gap-2 sm:col-span-2 lg:col-span-1">
               <input type="date" name="from" defaultValue={from} className="input w-full" />
               <input type="date" name="to" defaultValue={to} className="input w-full" />
@@ -186,7 +225,7 @@ export default async function ExpensesPage({
                   <th className="hidden px-4 py-3 font-medium xl:table-cell">Moneda</th>
                   <th className="px-4 py-3 font-medium text-right max-[508px]:px-2">Monto</th>
                   <th className="px-4 py-3 font-medium max-[508px]:px-2">Estado</th>
-                  <th className="hidden px-4 py-3 font-medium 2xl:table-cell">Rendición</th>
+                  <th className="hidden px-4 py-3 font-medium xl:table-cell">Rendicion</th>
                 </tr>
               </thead>
               <tbody>
@@ -217,10 +256,14 @@ export default async function ExpensesPage({
                         <ExpenseStatusBadge status={expense.status === "approved" && expense.weekly_reports?.workflow_status === "paid" ? "paid" : (expense.status ?? "pending")} />
                       </div>
                     </td>
-                    <td className="hidden px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] whitespace-nowrap 2xl:table-cell">
+                    <td className="hidden px-4 py-3 align-middle text-xs text-[var(--color-text-muted)] xl:table-cell">
                       {expense.report_id ? (
                         <Link href={`/dashboard/reports/${expense.report_id}`} className="hover:text-[var(--color-primary)] hover:underline">
-                          {expense.report_id.slice(0, 8)}...
+                          {expense.weekly_reports?.title?.trim()
+                            ? expense.weekly_reports.title
+                            : expense.weekly_reports
+                              ? `${new Date(expense.weekly_reports.week_start + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short" })} - ${new Date(expense.weekly_reports.week_end + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}`
+                              : `${expense.report_id.slice(0, 8)}...`}
                         </Link>
                       ) : (
                         "—"
