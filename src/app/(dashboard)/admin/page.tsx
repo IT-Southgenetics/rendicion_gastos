@@ -81,6 +81,24 @@ export default async function AdminHomePage() {
         </Link>
 
         <Link
+          href="/admin/advances"
+          className="card flex w-full min-w-0 items-center gap-2 overflow-hidden p-3 transition-shadow hover:shadow-md sm:gap-3 sm:p-4"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-100 sm:h-10 sm:w-10">
+            <svg className="h-4 w-4 text-[var(--color-primary)] sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 8h-3V4.5A2.5 2.5 0 0014.5 2h-5A2.5 2.5 0 007 4.5V8H4a2 2 0 00-2 2v8a4 4 0 004 4h12a4 4 0 004-4v-8a2 2 0 00-2-2zM9 8V5h6v3" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">Revisar anticipos</p>
+            <p className="truncate text-xs text-[var(--color-text-muted)]">
+              Ver solicitudes de anticipos
+            </p>
+          </div>
+          <span className="shrink-0 text-[var(--color-text-muted)]">›</span>
+        </Link>
+
+        <Link
           href="/admin/users"
           className="card flex w-full min-w-0 items-center gap-2 overflow-hidden p-3 transition-shadow hover:shadow-md sm:gap-3 sm:p-4"
         >

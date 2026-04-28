@@ -28,7 +28,8 @@ export default async function AprobadorAdvanceDetailPage({ params }: Props) {
 
   if (!advance) notFound();
 
-  if (isAprobador) {
+  // En el módulo de aprobaciones, tanto admin como aprobador deben respetar asignación.
+  if (isAprobador || isAdmin) {
     const { data: assignment } = await supabase
       .from("supervision_assignments")
       .select("id")

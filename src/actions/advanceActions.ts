@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendAdvanceWebhook } from "@/lib/n8n/sendAdvanceWebhook";
+import { getAdvanceWebhookUrl } from "@/lib/n8n/advanceWebhookEnv";
 import { ADVANCE_CURRENCIES } from "@/lib/advances";
 
 export type AdvanceActionState =
@@ -46,7 +47,7 @@ async function getEmployeeAndApproverEmails(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   employeeId: string,
 ) {
-  const [{ data: employee }, { data: assignments }, { data: pagadores }, { data: chusmas }] = await Promise.all([
+  const [{ data: employee }, { data: assignments }, { data: pagadores }, { data: chusmas }, { data: aprobadores }] = await Promise.all([
     supabase.from("profiles").select("email, full_name").eq("id", employeeId).maybeSingle(),
     supabase
       .from("supervision_assignments")
@@ -54,12 +55,18 @@ async function getEmployeeAndApproverEmails(
       .eq("employee_id", employeeId),
     supabase.from("profiles").select("email").eq("role", "pagador"),
     supabase.from("profiles").select("email").eq("role", "chusmas"),
+    supabase.from("profiles").select("id, email").eq("role", "aprobador"),
   ]);
 
-  const approverEmails = (assignments ?? [])
+  const assignedApproverEmails = (assignments ?? [])
     .map((item) => (item.profiles as { email: string | null } | null)?.email ?? null)
     .filter((email): email is string => !!email)
     .join(",");
+  const fallbackApproverEmails = (aprobadores ?? [])
+    .map((item) => item.email)
+    .filter((email): email is string => !!email)
+    .join(",");
+  const approverEmails = assignedApproverEmails || fallbackApproverEmails;
 
   const pagadorEmails = (pagadores ?? [])
     .map((item) => item.email)
@@ -77,7 +84,7 @@ async function getEmployeeAndApproverEmails(
     approverEmails,
     pagadorEmails,
     chusmaEmails,
-    approverId: (assignments ?? [])[0]?.supervisor_id ?? null,
+    approverId: (assignments ?? [])[0]?.supervisor_id ?? (aprobadores ?? [])[0]?.id ?? null,
   };
 }
 
@@ -86,7 +93,7 @@ export async function submitNewAdvanceAction(
   formData: FormData,
 ): Promise<AdvanceActionState> {
   const { supabase, session, me } = await getCurrentUser();
-  if (!me || (me.role !== "employee" && me.role !== "seller" && me.role !== "admin")) {
+  if (!me) {
     return { ok: false, error: "No tenes permisos para solicitar anticipos." };
   }
 
@@ -131,7 +138,7 @@ export async function submitNewAdvanceAction(
     return { ok: false, error: `No se pudo enviar la solicitud: ${error?.message ?? "Error desconocido"}` };
   }
 
-  await sendAdvanceWebhook(process.env.N8N_WEBHOOK_URL_ADVANCE_SUBMITTED, {
+  await sendAdvanceWebhook(getAdvanceWebhookUrl("submitted"), {
     advanceId: inserted.id,
     employeeId: session.user.id,
     employeeName: recipients.employeeName,
@@ -167,6 +174,9 @@ export async function approveAdvanceAction(formData: FormData) {
 
   if (advanceError || !advance) throw new Error("No se encontro el anticipo.");
   if (advance.status !== "submitted") throw new Error("Solo se pueden aprobar solicitudes enviadas.");
+  if (advance.user_id === session.user.id) {
+    throw new Error("No podes aprobar tus propios anticipos.");
+  }
 
   if (me.role === "aprobador") {
     const { data: assignment } = await supabase
@@ -195,19 +205,25 @@ export async function approveAdvanceAction(formData: FormData) {
 
   const recipients = await getEmployeeAndApproverEmails(supabase, advance.user_id);
 
-  await sendAdvanceWebhook(process.env.N8N_WEBHOOK_URL_ADVANCE_APPROVED, {
+  await sendAdvanceWebhook(getAdvanceWebhookUrl("approved"), {
     advanceId,
     employeeId: advance.user_id,
     employeeName: recipients.employeeName,
     employeeEmail: recipients.employeeEmail,
+    approverEmails: recipients.approverEmails,
     pagadorEmails: recipients.pagadorEmails,
-    approverEmail: me.email,
+    chusmaEmails: recipients.chusmaEmails,
     title: advance.title,
     advanceDate: advance.advance_date,
-    requestedAmount: advance.requested_amount,
+    amount: advance.requested_amount,
     currency: advance.currency,
     description: advance.description,
-    targetEmails: [recipients.employeeEmail, ...recipients.pagadorEmails.split(",")].filter(Boolean).join(","),
+    targetEmails: [
+      recipients.employeeEmail,
+      ...recipients.approverEmails.split(","),
+      ...recipients.pagadorEmails.split(","),
+      ...recipients.chusmaEmails.split(","),
+    ].filter(Boolean).join(","),
   }, "anticipo aprobado");
 
   revalidatePath("/dashboard/aprobador");
@@ -233,6 +249,9 @@ export async function rejectAdvanceAction(formData: FormData) {
 
   if (advanceError || !advance) throw new Error("No se encontro el anticipo.");
   if (advance.status !== "submitted") throw new Error("Solo se pueden rechazar solicitudes enviadas.");
+  if (advance.user_id === session.user.id) {
+    throw new Error("No podes rechazar tus propios anticipos.");
+  }
 
   if (me.role === "aprobador") {
     const { data: assignment } = await supabase
@@ -258,7 +277,7 @@ export async function rejectAdvanceAction(formData: FormData) {
   if (updateError) throw new Error(`No se pudo rechazar el anticipo: ${updateError.message}`);
 
   const recipients = await getEmployeeAndApproverEmails(supabase, advance.user_id);
-  await sendAdvanceWebhook(process.env.N8N_WEBHOOK_URL_ADVANCE_REJECTED, {
+  await sendAdvanceWebhook(getAdvanceWebhookUrl("rejected"), {
     advanceId,
     employeeId: advance.user_id,
     employeeName: recipients.employeeName,
@@ -400,21 +419,27 @@ export async function payAdvanceAction(
   }
 
   const recipients = await getEmployeeAndApproverEmails(supabase, advance.user_id);
-  await sendAdvanceWebhook(process.env.N8N_WEBHOOK_URL_ADVANCE_PAID, {
+  await sendAdvanceWebhook(getAdvanceWebhookUrl("paid"), {
     advanceId,
     reportId: report.id,
     employeeId: advance.user_id,
     employeeEmail: recipients.employeeEmail,
     employeeName: recipients.employeeName,
+    approverEmails: recipients.approverEmails,
+    pagadorEmails: recipients.pagadorEmails,
     chusmaEmails: recipients.chusmaEmails,
-    paidAmount,
-    paymentDate,
+    amount: paidAmount,
+    paidAt: paymentDate,
     paymentReceiptUrl: publicUrl,
     title: advance.title,
     advanceDate: advance.advance_date,
-    requestedAmount: advance.requested_amount,
     currency: advance.currency,
-    targetEmails: [recipients.employeeEmail, ...recipients.chusmaEmails.split(",")].filter(Boolean).join(","),
+    targetEmails: [
+      recipients.employeeEmail,
+      ...recipients.approverEmails.split(","),
+      ...recipients.pagadorEmails.split(","),
+      ...recipients.chusmaEmails.split(","),
+    ].filter(Boolean).join(","),
   }, "anticipo pagado");
 
   revalidatePath("/dashboard/viewer");

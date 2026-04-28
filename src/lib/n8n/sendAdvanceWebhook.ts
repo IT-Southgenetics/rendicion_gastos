@@ -5,7 +5,10 @@ export async function sendAdvanceWebhook(
   payload: AdvanceWebhookPayload,
   context: string,
 ) {
-  if (!webhookUrl) return;
+  if (!webhookUrl) {
+    console.warn(`Webhook no configurado (${context}).`);
+    return;
+  }
   try {
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -14,7 +17,9 @@ export async function sendAdvanceWebhook(
     });
     if (!response.ok) {
       console.error(`Error devuelto por n8n (${context}):`, await response.text());
+      return;
     }
+    console.info(`Webhook enviado correctamente (${context}) -> ${response.status}`);
   } catch (error) {
     console.error(`Error enviando webhook (${context}) a N8N:`, error);
   }

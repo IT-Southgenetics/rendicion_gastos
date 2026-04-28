@@ -38,6 +38,9 @@ export async function approveReportAction(formData: FormData) {
   if (reportError || !report) {
     throw new Error("No se encontr? la rendici?n.");
   }
+  if (report.user_id === session.user.id) {
+    throw new Error("No podes aprobar tus propias rendiciones.");
+  }
 
   if (expensesError) {
     throw new Error("No se pudieron obtener los gastos de la rendici?n.");

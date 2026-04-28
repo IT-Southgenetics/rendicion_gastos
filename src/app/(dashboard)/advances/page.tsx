@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { AdvanceStatusBadge } from "@/components/advances/AdvanceStatusBadge";
@@ -10,17 +9,13 @@ export default async function AdvancesPage() {
   if (!session) return null;
 
   const me = await getMyProfile(supabase, session);
-  const role = me?.role ?? "";
-  if (!["employee", "seller", "admin"].includes(role)) {
-    redirect("/dashboard");
-  }
 
   const query = supabase
     .from("advances")
     .select("id, title, advance_date, advance_end_date, requested_amount, currency, status, created_at")
     .order("created_at", { ascending: false });
 
-  if (role !== "admin") {
+  if (me?.role !== "admin") {
     query.eq("user_id", session.user.id);
   }
 

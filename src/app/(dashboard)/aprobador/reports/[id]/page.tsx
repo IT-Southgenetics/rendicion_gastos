@@ -50,8 +50,8 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
 
   if (!report) notFound();
 
-  // If aprobador, verify the report's owner is one of their supervised employees
-  if (me?.role === "aprobador") {
+  // En el módulo de aprobaciones, tanto admin como aprobador deben respetar asignación.
+  if (me?.role === "aprobador" || me?.role === "admin") {
     const { data: assignment } = await supabase
       .from("supervision_assignments")
       .select("id")

@@ -1,68 +1,57 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { BackButton } from "@/components/ui/BackButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
-import { BackButton } from "@/components/ui/BackButton";
 import { AdvanceStatusBadge } from "@/components/advances/AdvanceStatusBadge";
+import { DeleteAdvanceButton } from "@/components/admin/DeleteAdvanceButton";
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
-export default async function AdvanceDetailPage({ params }: Props) {
+export default async function AdminAdvanceDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
   const me = await getMyProfile(supabase, session);
-  const isAdmin = me?.role === "admin";
-  if (!me) redirect("/dashboard");
+  if (me?.role !== "admin") redirect("/dashboard");
 
   const { data: advance } = await supabase
     .from("advances")
-    .select("*, profiles!advances_approver_id_fkey(full_name, email)")
+    .select("*, requester:profiles!advances_user_id_fkey(full_name, email, department), approver:profiles!advances_approver_id_fkey(full_name, email)")
     .eq("id", id)
     .maybeSingle();
+
   if (!advance) notFound();
 
-  let canView = isAdmin || advance.user_id === session.user.id;
-
-  if (!canView && me.role === "aprobador") {
-    const directlyAssigned = advance.approver_id === session.user.id;
-    if (directlyAssigned) {
-      canView = true;
-    } else {
-      const { data: assignment } = await supabase
-        .from("supervision_assignments")
-        .select("id")
-        .eq("supervisor_id", session.user.id)
-        .eq("employee_id", advance.user_id)
-        .maybeSingle();
-      canView = !!assignment;
-    }
-  }
-
-  if (!canView && (me.role === "pagador" || me.role === "chusmas")) {
-    canView = true;
-  }
-
-  if (!canView) {
-    notFound();
-  }
-
-  const approver = advance.profiles as { full_name: string; email: string } | null;
+  const requester = advance.requester as { full_name: string; email: string; department: string | null } | null;
+  const approver = advance.approver as { full_name: string; email: string } | null;
 
   return (
-    <div className="space-y-4">
-      <BackButton href={me.role === "aprobador" ? "/dashboard/aprobador" : "/dashboard/advances"} />
+    <div className="w-full max-w-full space-y-5">
+      <div className="space-y-3">
+        <BackButton href="/dashboard/admin/advances" />
+        <div className="min-w-0">
+          <h1 className="page-title break-words">{advance.title}</h1>
+          <p className="mt-1 break-words text-sm text-[var(--color-text-muted)]">
+            <span className="font-semibold text-[var(--color-text-primary)]">{requester?.full_name ?? "—"}</span>
+            {requester?.email && ` · ${requester.email}`}
+            {requester?.department && ` · ${requester.department}`}
+          </p>
+        </div>
+      </div>
 
       <div className="card p-5 space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-lg font-bold text-[var(--color-text-primary)]">{advance.title}</h1>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Periodo solicitado: {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })}
+              Solicitud del {new Date(advance.created_at).toLocaleDateString("es-UY")}
+            </p>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Periodo: {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })}
               {" - "}
               {new Date((advance.advance_end_date ?? advance.advance_date) + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "long", year: "numeric" })}
             </p>
@@ -78,7 +67,7 @@ export default async function AdvanceDetailPage({ params }: Props) {
             </p>
           </div>
           <div className="rounded-xl border border-[#f0ecf4] bg-[#faf8fc] px-4 py-3">
-            <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Aprobador</p>
+            <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Aprobador asignado</p>
             <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">{approver?.full_name ?? "Sin asignar"}</p>
             <p className="text-[0.7rem] text-[var(--color-text-muted)]">{approver?.email ?? "—"}</p>
           </div>
@@ -117,6 +106,14 @@ export default async function AdvanceDetailPage({ params }: Props) {
             Ver comprobante de pago
           </a>
         )}
+
+        <div className="border-t border-[#f0ecf4] pt-3">
+          <DeleteAdvanceButton
+            advanceId={advance.id}
+            advanceTitle={advance.title}
+            paymentReceiptPath={advance.payment_receipt_path}
+          />
+        </div>
       </div>
     </div>
   );

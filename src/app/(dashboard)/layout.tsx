@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { MobileNav } from "@/components/layout/MobileNav";
+import { MobileDrawerNav } from "@/components/layout/MobileDrawerNav";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { WeeklyReportsRealtimeRefresher } from "@/components/realtime/WeeklyReportsRealtimeRefresher";
@@ -19,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     const role = me?.role ?? null;
 
     isAdmin      = role === "admin";
-    isSupervisor = role === "aprobador";
+    isSupervisor = role === "aprobador" || role === "admin";
     // Compatibilidad: algunos entornos usaron "chusma" (singular)
     isViewer     = role === "chusmas" || role === "chusma";
     isPagador    = role === "pagador";
@@ -28,13 +28,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <div className="app-shell">
       <Sidebar isAdmin={isAdmin} isSupervisor={isSupervisor} isViewer={isViewer} isPagador={isPagador} />
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden bg-[var(--color-bg)] pb-20 lg:pb-0">
-        <Header />
-        <main className="min-w-0 flex-1 w-full max-w-full overflow-x-hidden px-4 py-4 lg:px-6 lg:py-6">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden bg-[var(--color-bg)]">
+        <Header mobileLeftSlot={<MobileDrawerNav isAdmin={isAdmin} isSupervisor={isSupervisor} isViewer={isViewer} isPagador={isPagador} />} />
+        <main className="min-w-0 flex-1 w-full max-w-full overflow-x-hidden px-4 py-4 xl:px-6 xl:py-6">
           <WeeklyReportsRealtimeRefresher />
           {children}
         </main>
-        <MobileNav isAdmin={isAdmin} isSupervisor={isSupervisor} isViewer={isViewer} isPagador={isPagador} />
       </div>
     </div>
   );

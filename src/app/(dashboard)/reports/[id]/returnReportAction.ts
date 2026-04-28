@@ -28,6 +28,9 @@ export async function returnReportAction(formData: FormData) {
   if (reportError || !report) {
     throw new Error("No se encontró la rendición.");
   }
+  if (report.user_id === session.user.id) {
+    throw new Error("No podes devolver tus propias rendiciones.");
+  }
 
   const { data: employeeData, error: ownerError } = await supabase
     .from("profiles")

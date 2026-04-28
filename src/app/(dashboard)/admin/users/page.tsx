@@ -99,7 +99,7 @@ export default async function AdminUsersPage({
     assignmentsBySupervisor[a.supervisor_id].push({ id: a.id, employee_id: a.employee_id, employee: emp });
   }
 
-  const validSupervisorRoles = new Set(["aprobador", "supervisor"]);
+  const validSupervisorRoles = new Set(["aprobador", "supervisor", "admin"]);
   const supervisorsByEmployee: Record<string, string[]> = {};
   for (const a of allAssignments ?? []) {
     const sup = userList.find((u) => u.id === a.supervisor_id);
@@ -127,7 +127,7 @@ export default async function AdminUsersPage({
   const availableForSupervision = userList
     .map((u) => ({ id: u.id, full_name: u.full_name, email: u.email, role: u.role }));
 
-  const supervisors = userList.filter((u) => u.role === "aprobador" || u.role === "supervisor");
+  const supervisors = userList.filter((u) => u.role === "aprobador" || u.role === "supervisor" || u.role === "admin");
   const viewers     = (rawUsers ?? []).filter((u) => u.role === "chusmas");
 
   // Para chusmas: empleados asignables = todos los usuarios (sin filtrar por país) menos el propio chusmas

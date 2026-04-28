@@ -24,9 +24,12 @@ export default async function AprobadorEmployeeDetailPage({ params }: Props) {
   if (me?.role !== "aprobador" && me?.role !== "admin") {
     redirect("/dashboard");
   }
+  if (me?.role === "admin" && employeeId === session.user.id) {
+    redirect("/dashboard/aprobador");
+  }
 
-  // Verificar que realmente apruebe a este empleado (si no es admin)
-  if (me?.role === "aprobador") {
+  // Verificar que realmente apruebe a este empleado
+  if (me?.role === "aprobador" || me?.role === "admin") {
     const { data: assignment } = await supabase
       .from("supervision_assignments")
       .select("id")
