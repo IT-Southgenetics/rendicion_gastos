@@ -32,6 +32,12 @@ const CURRENCIES = [
 ] as const;
 
 type SubmitState = "idle" | "saving" | "sending" | "success" | "error";
+const IMAGE_READER_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+]);
 
 interface NewExpenseFormProps {
   /** ID de la rendición a la que pertenece el gasto (requerido) */
@@ -115,22 +121,29 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
       return;
     }
 
-    // Disparar webhook a n8n para análisis de factura (empresa / monto)
-    try {
-      await sendExpenseWebhook({
-        id: expense.id,
-        report_id: expense.report_id,
-        user_id: expense.user_id,
-        categoria: expense.category,
-        descripcion: expense.description,
-        monto: Number(expense.amount) || 0,
-        moneda: expense.currency ?? moneda,
-        fecha: expense.expense_date ?? todayStr,
-        comprobante_url: expense.ticket_url ?? allUrls[0],
+    // Disparar webhook a n8n solo para formatos que el lector de imagenes soporta.
+    const firstUploadedMimeType = filesUploaded[0]?.mimeType?.toLowerCase() ?? "";
+    if (IMAGE_READER_MIME_TYPES.has(firstUploadedMimeType)) {
+      try {
+        await sendExpenseWebhook({
+          id: expense.id,
+          report_id: expense.report_id,
+          user_id: expense.user_id,
+          categoria: expense.category,
+          descripcion: expense.description,
+          monto: Number(expense.amount) || 0,
+          moneda: expense.currency ?? moneda,
+          fecha: expense.expense_date ?? todayStr,
+          comprobante_url: expense.ticket_url ?? allUrls[0],
+        });
+      } catch (err) {
+        console.error("Error enviando webhook de factura a n8n:", err);
+        // No bloqueamos al usuario si falla el webhook
+      }
+    } else {
+      toast("Comprobante PDF guardado. El lector automatico solo procesa imagenes.", {
+        icon: "ℹ️",
       });
-    } catch (err) {
-      console.error("Error enviando webhook de factura a n8n:", err);
-      // No bloqueamos al usuario si falla el webhook
     }
 
     toast.success("¡Gasto cargado correctamente!");
