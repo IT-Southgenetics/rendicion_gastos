@@ -33,6 +33,12 @@ export default async function AdminAdvancesPage() {
 
   const rows = advances ?? [];
   const submittedCount = rows.filter((advance) => advance.status === "submitted").length;
+  const formatDate = (value: string | null | undefined) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" });
+  };
 
   return (
     <div className="w-full max-w-full space-y-5">
@@ -68,15 +74,17 @@ export default async function AdminAdvancesPage() {
       </div>
 
       <div className="card w-full overflow-hidden">
-        <div className="hidden overflow-x-auto lg:block">
-          <table className="min-w-full text-left text-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-[980px] w-full text-left text-sm">
             <thead className="bg-[#f5f1f8] text-xs uppercase text-[var(--color-text-muted)]">
               <tr>
-                <th className="px-4 py-3 font-medium">Solicitante</th>
+                <th className="px-4 py-3 font-medium">Nombre</th>
+                <th className="px-4 py-3 font-medium">Fecha solicitud</th>
                 <th className="px-4 py-3 font-medium">Periodo</th>
                 <th className="px-4 py-3 font-medium text-right">Monto</th>
-                <th className="px-4 py-3 font-medium">Aprobador</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium">Creador</th>
+                <th className="px-4 py-3 font-medium">Aprobador</th>
               </tr>
             </thead>
             <tbody>
@@ -87,15 +95,12 @@ export default async function AdminAdvancesPage() {
                   return (
                     <tr key={advance.id} className="border-t border-[#f0ecf4] transition-colors hover:bg-[#faf7fd]">
                       <td className="px-4 py-3 align-middle">
-                        <Link href={`/dashboard/admin/advances/${advance.id}`} className="block">
-                          <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                            {requester?.full_name ?? "—"}
-                          </p>
-                          <p className="text-[0.7rem] text-[var(--color-text-muted)]">{requester?.email ?? "—"}</p>
-                          <p className="max-w-[180px] truncate text-[0.7rem] font-medium text-[var(--color-primary)]">
-                            {advance.title}
-                          </p>
+                        <Link href={`/dashboard/admin/advances/${advance.id}`} className="font-medium text-[var(--color-text-primary)] hover:text-[var(--color-primary)]">
+                          {advance.title || "Sin título"}
                         </Link>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
+                        {formatDate(advance.created_at)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
                         {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
@@ -107,72 +112,29 @@ export default async function AdminAdvancesPage() {
                         {" "}
                         <span className="text-xs font-normal text-[var(--color-text-muted)]">{advance.currency}</span>
                       </td>
+                      <td className="px-4 py-3 align-middle">
+                        <AdvanceStatusBadge status={advance.status ?? "draft"} />
+                      </td>
+                      <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
+                        <p className="font-medium text-[var(--color-text-primary)]">{requester?.full_name ?? "—"}</p>
+                        <p>{requester?.email ?? "—"}</p>
+                      </td>
                       <td className="px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
                         <p className="font-medium text-[var(--color-text-primary)]">{approver?.full_name ?? "Sin asignar"}</p>
                         <p>{approver?.email ?? "—"}</p>
-                      </td>
-                      <td className="px-4 py-3 align-middle">
-                        <AdvanceStatusBadge status={advance.status ?? "draft"} />
                       </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
+                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
                     No hay anticipos aún.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
-
-        <div className="divide-y divide-[#f0ecf4] lg:hidden">
-          {rows.length > 0 ? (
-            rows.map((advance) => {
-              const requester = advance.requester as { full_name: string; email: string } | null;
-              const approver = advance.approver as { full_name: string; email: string } | null;
-              return (
-                <Link
-                  key={advance.id}
-                  href={`/dashboard/admin/advances/${advance.id}`}
-                  className="flex w-full items-center gap-3 px-4 py-3 transition-colors active:bg-[#f5f1f8] max-[430px]:px-3"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 text-sm font-bold text-[var(--color-primary)]">
-                    {(requester?.full_name ?? "?").charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 items-center justify-between gap-2">
-                      <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
-                        {requester?.full_name ?? "—"}
-                      </p>
-                      <span className="shrink-0">
-                        <AdvanceStatusBadge status={advance.status ?? "draft"} />
-                      </span>
-                    </div>
-                    <p className="truncate text-[0.7rem] font-medium text-[var(--color-primary)]">
-                      {advance.title}
-                    </p>
-                    <p className="text-[0.65rem] text-[var(--color-text-muted)]">
-                      {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY")}
-                      {" - "}
-                      {new Date((advance.advance_end_date ?? advance.advance_date) + "T12:00:00").toLocaleDateString("es-UY")}
-                      {" · "}
-                      {advance.currency} {Number(advance.requested_amount).toFixed(2)}
-                    </p>
-                    <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">
-                      Aprobador: {approver?.full_name ?? "Sin asignar"}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })
-          ) : (
-            <div className="px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
-              No hay anticipos aún.
-            </div>
-          )}
         </div>
       </div>
     </div>

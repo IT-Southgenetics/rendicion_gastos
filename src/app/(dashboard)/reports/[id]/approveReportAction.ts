@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateExcelExport } from "@/lib/excelGenerator";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { calculateSettlement, totalInUSD } from "@/lib/currency";
 
 export async function approveReportAction(formData: FormData) {
   "use server";
@@ -26,7 +27,7 @@ export async function approveReportAction(formData: FormData) {
     await Promise.all([
       supabase
         .from("weekly_reports")
-        .select("id, user_id, title, total_amount, budget_currency, exchange_rates")
+        .select("id, user_id, title, total_amount, budget_currency, exchange_rates, advance_amount_usd")
         .eq("id", reportId)
         .single(),
       supabase
@@ -203,6 +204,16 @@ export async function approveReportAction(formData: FormData) {
       merchant_name: e.merchant_name ?? "",
       expense_date: e.expense_date ?? "",
     }));
+    const reportTotalUsd = totalInUSD(
+      expenseList.map((e) => ({ amount: Number((e as any).amount ?? 0), currency: (e as any).currency ?? "UYU" })),
+      reportExchangeRates,
+    );
+    const advanceAmountUsd = typeof (report as any).advance_amount_usd === "number"
+      ? Number((report as any).advance_amount_usd)
+      : null;
+    const settlement = (typeof reportTotalUsd === "number" && typeof advanceAmountUsd === "number")
+      ? calculateSettlement(reportTotalUsd, advanceAmountUsd)
+      : null;
 
     const payload = {
       reportId: reportId,
@@ -214,6 +225,10 @@ export async function approveReportAction(formData: FormData) {
       exchangeRates: reportExchangeRates,
       isMulticurrency,
       expenseDetails,
+      reportTotalUsd,
+      advanceAmountUsd,
+      settlementDirection: settlement?.direction ?? null,
+      settlementAmountUsd: settlement?.amountUsd ?? null,
       closingDate: closedAtIso.slice(0, 10),
       closedAt: closedAtIso,
       employeeEmail,

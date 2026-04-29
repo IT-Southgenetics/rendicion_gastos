@@ -6,6 +6,7 @@ import type { Tables } from "@/types/database";
 
 type Expense      = Tables<"expenses">;
 type WeeklyReport = Tables<"weekly_reports">;
+type Advance = Tables<"advances">;
 
 const CATEGORY_LABELS: Record<string, string> = {
   transport:       "Transporte",
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
 
   const userId = session.user.id;
 
-  const [{ data: expenses }, { data: reports }, { data: profile }] = await Promise.all([
+  const [{ data: expenses }, { data: reports }, { data: profile }, { data: advances }] = await Promise.all([
     supabase
       .from("expenses")
       .select("*")
@@ -44,6 +45,12 @@ export default async function DashboardPage() {
       .select("full_name")
       .eq("id", userId)
       .single(),
+    supabase
+      .from("advances")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
 
   const openReport: WeeklyReport | undefined = reports?.[0];
@@ -187,6 +194,63 @@ export default async function DashboardPage() {
               </svg>
             </div>
             <p className="text-sm text-[var(--color-text-muted)]">Aún no tenés gastos registrados.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="card w-full max-w-full overflow-hidden">
+        <div className="flex items-center justify-between gap-2 border-b border-[#f0ecf4] px-4 py-3 max-[430px]:px-3">
+          <h2 className="min-w-0 truncate text-sm font-semibold text-[var(--color-text-primary)]">
+            Últimos anticipos
+          </h2>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/advances/new"
+              className="shrink-0 whitespace-nowrap text-xs font-medium text-[var(--color-primary)]"
+            >
+              Solicitar
+            </Link>
+            <Link
+              href="/dashboard/advances"
+              className="shrink-0 whitespace-nowrap text-xs font-medium text-[var(--color-primary)]"
+            >
+              Ver todos
+            </Link>
+          </div>
+        </div>
+        {advances && advances.length > 0 ? (
+          <div className="divide-y divide-[#f0ecf4]">
+            {(advances as Advance[]).map((advance) => (
+              <Link
+                key={advance.id}
+                href={`/dashboard/advances/${advance.id}`}
+                className="flex w-full min-w-0 items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-[#faf7fd] active:bg-[#f0ecf4] max-[430px]:px-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-[var(--color-text-primary)] max-[430px]:text-xs">
+                    {advance.title || "Sin título"}
+                  </p>
+                  <p className="truncate text-xs text-[var(--color-text-muted)] max-[430px]:text-[0.65rem]">
+                    {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                  <span className="whitespace-nowrap text-sm font-semibold max-[430px]:text-xs">
+                    {Number(advance.requested_amount).toLocaleString("es-UY", { minimumFractionDigits: 2 })}
+                    <span className="ml-0.5 text-xs font-normal text-[var(--color-text-muted)] max-[540px]:hidden">
+                      {advance.currency ?? "USD"}
+                    </span>
+                  </span>
+                  <span className="text-[0.65rem] text-[var(--color-text-muted)] capitalize">
+                    {advance.status ?? "draft"}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <p className="text-sm text-[var(--color-text-muted)]">Aún no tenés anticipos registrados.</p>
           </div>
         )}
       </div>

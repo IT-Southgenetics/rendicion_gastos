@@ -196,34 +196,51 @@ export default async function AprobadorHomePage() {
             </span>
           </div>
         </div>
-        {advanceRows.length > 0 ? (
-          <div className="divide-y divide-[#f0ecf4]">
-            {advanceRows.map((advance) => {
-              const owner = advance.profiles as { full_name: string; email: string } | null;
-              return (
-                <Link
-                  key={advance.id}
-                  href={`/dashboard/aprobador/advances/${advance.id}`}
-                  className="flex items-start gap-3 px-3 py-3 transition-colors hover:bg-[#faf7fd] sm:px-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{advance.title}</p>
-                    <p className="line-clamp-2 break-words text-[0.65rem] text-[var(--color-text-muted)] sm:truncate">
-                      {owner?.full_name ?? "—"} · {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY")} · {advance.currency} {Number(advance.requested_amount).toFixed(2)}
-                    </p>
-                  </div>
-                  <span className="shrink-0">
-                    <AdvanceStatusBadge status={advance.status ?? "draft"} />
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="px-4 py-8 text-center text-sm text-[var(--color-text-muted)]">
-            No hay solicitudes de anticipo para revisar.
-          </div>
-        )}
+        <div className="overflow-x-auto">
+          <table className="min-w-[760px] w-full text-left text-sm">
+            <thead className="bg-[#f5f1f8] text-xs uppercase text-[var(--color-text-muted)]">
+              <tr>
+                <th className="px-4 py-3 font-medium">Nombre</th>
+                <th className="px-4 py-3 font-medium">Fechas</th>
+                <th className="px-4 py-3 font-medium text-right">Monto</th>
+                <th className="px-4 py-3 font-medium">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {advanceRows.length > 0 ? (
+                advanceRows.map((advance) => {
+                  const owner = advance.profiles as { full_name: string; email: string } | null;
+                  return (
+                    <tr key={advance.id} className="border-t border-[#f0ecf4] transition-colors hover:bg-[#faf7fd]">
+                      <td className="px-4 py-3 align-middle">
+                        <Link href={`/dashboard/aprobador/advances/${advance.id}`} className="block">
+                          <p className="font-medium text-[var(--color-text-primary)]">{advance.title || "Sin título"}</p>
+                          <p className="text-[0.7rem] text-[var(--color-text-muted)]">{owner?.full_name ?? "—"}</p>
+                        </Link>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-middle text-xs text-[var(--color-text-muted)]">
+                        {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-middle text-right text-sm font-semibold">
+                        {Number(advance.requested_amount).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                        <span className="text-xs font-normal text-[var(--color-text-muted)]">{advance.currency}</span>
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <AdvanceStatusBadge status={advance.status ?? "draft"} />
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-[var(--color-text-muted)]">
+                    No hay solicitudes de anticipo para revisar.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

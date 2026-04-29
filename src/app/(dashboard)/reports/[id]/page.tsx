@@ -67,6 +67,8 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
   const isSupervisor = session.user.id !== r.user_id && !isChusma;
   const startDate = new Date(r.week_start + "T12:00:00");
   const endDate   = new Date(r.week_end   + "T12:00:00");
+  const isAutoAdvanceNote = typeof r.notes === "string"
+    && /^Rendicion creada automaticamente desde anticipo\s+[a-f0-9-]+\.$/i.test(r.notes.trim());
 
   const expenseList = (expenses ?? []) as Expense[];
   const nonRejectedExpenses = expenseList.filter((e) => e.status !== "rejected");
@@ -172,7 +174,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                 {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
               </span>
             </div>
-            {r.notes && (
+            {r.notes && !isAutoAdvanceNote && (
               <p className="mt-1.5 break-words text-sm italic text-[var(--color-text-muted)]">{r.notes}</p>
             )}
           </div>

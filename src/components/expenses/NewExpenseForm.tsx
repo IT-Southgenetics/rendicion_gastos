@@ -32,12 +32,6 @@ const CURRENCIES = [
 ] as const;
 
 type SubmitState = "idle" | "saving" | "sending" | "success" | "error";
-const IMAGE_READER_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-]);
 
 interface NewExpenseFormProps {
   /** ID de la rendición a la que pertenece el gasto (requerido) */
@@ -123,7 +117,7 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
 
     // Disparar webhook a n8n solo para formatos que el lector de imagenes soporta.
     const firstUploadedMimeType = filesUploaded[0]?.mimeType?.toLowerCase() ?? "";
-    if (IMAGE_READER_MIME_TYPES.has(firstUploadedMimeType)) {
+    if (firstUploadedMimeType.startsWith("image/")) {
       try {
         await sendExpenseWebhook({
           id: expense.id,
@@ -140,10 +134,6 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
         console.error("Error enviando webhook de factura a n8n:", err);
         // No bloqueamos al usuario si falla el webhook
       }
-    } else {
-      toast("Comprobante PDF guardado. El lector automatico solo procesa imagenes.", {
-        icon: "ℹ️",
-      });
     }
 
     toast.success("¡Gasto cargado correctamente!");

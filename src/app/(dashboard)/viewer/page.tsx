@@ -2,8 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
-import { AdvanceStatusBadge } from "@/components/advances/AdvanceStatusBadge";
-import { PayAdvanceModal } from "@/components/advances/PayAdvanceModal";
+import { ViewerAdvancesTable } from "@/components/viewer/ViewerAdvancesTable";
 
 const ROLE_LABELS: Record<string, string> = {
   employee:   "Empleado",
@@ -273,46 +272,21 @@ export default async function ViewerHomePage() {
             {advanceRows.length} registros
           </span>
         </div>
-        {advanceRows.length > 0 ? (
-          <div className="divide-y divide-[#f0ecf4]">
-            {advanceRows.map((advance) => {
-              const owner = advance.profiles as { full_name: string; email: string } | null;
-              return (
-                <div key={advance.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{advance.title}</p>
-                    <p className="truncate text-[0.65rem] text-[var(--color-text-muted)]">
-                      {owner?.full_name ?? "—"} · {new Date(advance.advance_date + "T12:00:00").toLocaleDateString("es-UY")} · {advance.currency} {Number(advance.requested_amount).toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 ml-auto">
-                    <AdvanceStatusBadge status={advance.status ?? "draft"} />
-                    {isPagador && advance.status === "approved" && (
-                      <PayAdvanceModal
-                        advanceId={advance.id}
-                        amount={Number(advance.requested_amount)}
-                        currency={advance.currency}
-                        advanceDate={advance.advance_date}
-                      />
-                    )}
-                    {advance.created_report_id && (
-                      <Link
-                        href={`/dashboard/viewer/reports/${advance.created_report_id}`}
-                        className="inline-flex items-center rounded-full border border-[#d4cfe0] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[#f5f1f8]"
-                      >
-                        Ver rendicion
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="px-4 py-8 text-center text-sm text-[var(--color-text-muted)]">
-            No hay solicitudes de anticipo para mostrar.
-          </div>
-        )}
+        <div className="p-4 sm:p-5">
+          <ViewerAdvancesTable
+            advances={(advanceRows as Array<{
+              id: string;
+              title: string | null;
+              advance_date: string;
+              requested_amount: number | string;
+              currency: string | null;
+              status: string | null;
+              created_report_id: string | null;
+              profiles: { full_name: string; email: string } | null;
+            }>) ?? []}
+            isPagador={isPagador}
+          />
+        </div>
       </div>
     </div>
   );
