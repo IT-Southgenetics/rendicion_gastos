@@ -3,43 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { deleteAdvanceAction } from "@/actions/advanceActions";
 
 interface DeleteAdvanceButtonProps {
   advanceId: string;
   advanceTitle: string;
-  paymentReceiptPath?: string | null;
 }
 
 export function DeleteAdvanceButton({
   advanceId,
   advanceTitle,
-  paymentReceiptPath,
 }: DeleteAdvanceButtonProps) {
-  const supabase = createSupabaseBrowserClient();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
     setDeleting(true);
-
-    if (paymentReceiptPath) {
-      const { error: storageError } = await supabase
-        .storage
-        .from("payment_receipts")
-        .remove([paymentReceiptPath]);
-
-      if (storageError) {
-        console.error("No se pudo eliminar comprobante del anticipo:", storageError);
-      }
-    }
-
-    const { error } = await supabase.from("advances").delete().eq("id", advanceId);
+    const result = await deleteAdvanceAction(advanceId);
     setDeleting(false);
 
-    if (error) {
-      toast.error(`Error al eliminar: ${error.message}`);
+    if (!result.ok) {
+      toast.error(`Error al eliminar: ${result.error}`);
       setConfirming(false);
       return;
     }

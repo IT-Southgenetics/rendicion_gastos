@@ -111,7 +111,6 @@ export default async function AdminAdvanceDetailPage({ params }: Props) {
           <DeleteAdvanceButton
             advanceId={advance.id}
             advanceTitle={advance.title}
-            paymentReceiptPath={advance.payment_receipt_path}
           />
         </div>
       </div>

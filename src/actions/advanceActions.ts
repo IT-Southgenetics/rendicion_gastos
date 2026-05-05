@@ -6,12 +6,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendAdvanceWebhook } from "@/lib/n8n/sendAdvanceWebhook";
 import { getAdvanceWebhookUrl } from "@/lib/n8n/advanceWebhookEnv";
 import { ADVANCE_CURRENCIES } from "@/lib/advances";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 export type AdvanceActionState =
   | { ok: true; advanceId?: string; createdReportId?: string }
   | { ok: false; error: string };
-
-type Role = "admin" | "employee" | "seller" | "aprobador" | "pagador" | "chusmas" | "supervisor";
 
 const VALID_CURRENCIES = new Set(ADVANCE_CURRENCIES.map((currency) => currency.value));
 
@@ -26,21 +25,14 @@ function toPositiveNumber(value: FormDataEntryValue | null): number | null {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+// Usa getUser() para validar el JWT contra la API de Supabase (no solo desde cookie).
+// Usa getMyProfile() para incluir el fallback por email y el hardcode de admin.
 async function getCurrentUser() {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) redirect("/login");
-
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("id, role, email, full_name")
-    .eq("id", session.user.id)
-    .maybeSingle();
-
-  if (!me?.id) {
-    return { supabase, session, me: null };
-  }
-  return { supabase, session, me: me as { id: string; role: Role; email: string | null; full_name: string | null } };
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (!user || error) redirect("/login");
+  const me = await getMyProfile(supabase, { user: { id: user.id, email: user.email } });
+  return { supabase, user, me };
 }
 
 async function getEmployeeAndApproverEmails(
@@ -66,33 +58,52 @@ async function getEmployeeAndApproverEmails(
     .map((item) => item.email)
     .filter((email): email is string => !!email)
     .join(",");
-  const approverEmails = assignedApproverEmails || fallbackApproverEmails;
-
-  const pagadorEmails = (pagadores ?? [])
-    .map((item) => item.email)
-    .filter((email): email is string => !!email)
-    .join(",");
-
-  const chusmaEmails = (chusmas ?? [])
-    .map((item) => item.email)
-    .filter((email): email is string => !!email)
-    .join(",");
 
   return {
     employeeEmail: employee?.email ?? "",
     employeeName: employee?.full_name ?? "",
-    approverEmails,
-    pagadorEmails,
-    chusmaEmails,
+    approverEmails: assignedApproverEmails || fallbackApproverEmails,
+    pagadorEmails: (pagadores ?? [])
+      .map((item) => item.email)
+      .filter((email): email is string => !!email)
+      .join(","),
+    chusmaEmails: (chusmas ?? [])
+      .map((item) => item.email)
+      .filter((email): email is string => !!email)
+      .join(","),
     approverId: (assignments ?? [])[0]?.supervisor_id ?? (aprobadores ?? [])[0]?.id ?? null,
   };
+}
+
+// Lanza error si el usuario no tiene uno de los roles permitidos.
+function assertRole(
+  me: { role: string | null } | null,
+  allowed: string[],
+  errorMsg: string,
+): void {
+  if (!me || !allowed.includes(me.role ?? "")) throw new Error(errorMsg);
+}
+
+// Verifica que el aprobador tenga asignado al empleado en supervision_assignments.
+async function assertApproverAssignment(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  supervisorId: string,
+  employeeId: string,
+) {
+  const { data: assignment } = await supabase
+    .from("supervision_assignments")
+    .select("id")
+    .eq("supervisor_id", supervisorId)
+    .eq("employee_id", employeeId)
+    .maybeSingle();
+  if (!assignment) throw new Error("No tenes este empleado asignado para aprobacion.");
 }
 
 export async function submitNewAdvanceAction(
   _prevState: AdvanceActionState | null,
   formData: FormData,
 ): Promise<AdvanceActionState> {
-  const { supabase, session, me } = await getCurrentUser();
+  const { supabase, user, me } = await getCurrentUser();
   if (!me) {
     return { ok: false, error: "No tenes permisos para solicitar anticipos." };
   }
@@ -111,16 +122,17 @@ export async function submitNewAdvanceAction(
     return { ok: false, error: "La fecha de fin no puede ser menor que la fecha de inicio." };
   }
 
-  const recipients = await getEmployeeAndApproverEmails(supabase, session.user.id);
+  const recipients = await getEmployeeAndApproverEmails(supabase, user.id);
   if (!recipients.approverEmails) {
     return { ok: false, error: "No hay aprobador asignado para tu usuario." };
   }
 
-  const nowIso = new Date().toISOString();
-  const { data: inserted, error } = await supabase
+  // Inserta como draft (RLS solo permite status='draft' en INSERT).
+  // Luego actualiza a submitted respetando la policy de UPDATE del owner.
+  const { data: inserted, error: insertError } = await supabase
     .from("advances")
     .insert({
-      user_id: session.user.id,
+      user_id: user.id,
       approver_id: recipients.approverId,
       title,
       advance_date: advanceDate,
@@ -128,19 +140,29 @@ export async function submitNewAdvanceAction(
       requested_amount: requestedAmount,
       currency,
       description,
-      status: "submitted",
-      submitted_at: nowIso,
+      status: "draft",
     })
     .select("id")
     .single();
 
-  if (error || !inserted) {
-    return { ok: false, error: `No se pudo enviar la solicitud: ${error?.message ?? "Error desconocido"}` };
+  if (insertError || !inserted) {
+    return { ok: false, error: `No se pudo enviar la solicitud: ${insertError?.message ?? "Error desconocido"}` };
+  }
+
+  const nowIso = new Date().toISOString();
+  const { error: submitError } = await supabase
+    .from("advances")
+    .update({ status: "submitted", submitted_at: nowIso })
+    .eq("id", inserted.id)
+    .eq("status", "draft");
+
+  if (submitError) {
+    return { ok: false, error: `No se pudo enviar la solicitud: ${submitError.message}` };
   }
 
   await sendAdvanceWebhook(getAdvanceWebhookUrl("submitted"), {
     advanceId: inserted.id,
-    employeeId: session.user.id,
+    employeeId: user.id,
     employeeName: recipients.employeeName,
     employeeEmail: recipients.employeeEmail,
     approverEmails: recipients.approverEmails,
@@ -158,10 +180,8 @@ export async function submitNewAdvanceAction(
 }
 
 export async function approveAdvanceAction(formData: FormData) {
-  const { supabase, session, me } = await getCurrentUser();
-  if (!me || (me.role !== "aprobador" && me.role !== "admin")) {
-    throw new Error("No tenes permisos para aprobar anticipos.");
-  }
+  const { supabase, user, me } = await getCurrentUser();
+  assertRole(me, ["aprobador", "admin"], "No tenes permisos para aprobar anticipos.");
 
   const advanceId = (formData.get("advanceId") as string | null)?.trim();
   if (!advanceId) throw new Error("advanceId requerido.");
@@ -174,36 +194,29 @@ export async function approveAdvanceAction(formData: FormData) {
 
   if (advanceError || !advance) throw new Error("No se encontro el anticipo.");
   if (advance.status !== "submitted") throw new Error("Solo se pueden aprobar solicitudes enviadas.");
-  if (advance.user_id === session.user.id) {
-    throw new Error("No podes aprobar tus propios anticipos.");
-  }
+  if (advance.user_id === user.id) throw new Error("No podes aprobar tus propios anticipos.");
 
-  if (me.role === "aprobador") {
-    const { data: assignment } = await supabase
-      .from("supervision_assignments")
-      .select("id")
-      .eq("supervisor_id", session.user.id)
-      .eq("employee_id", advance.user_id)
-      .maybeSingle();
-    if (!assignment) throw new Error("No tenes este empleado asignado para aprobacion.");
+  if (me!.role === "aprobador") {
+    await assertApproverAssignment(supabase, user.id, advance.user_id);
   }
 
   const nowIso = new Date().toISOString();
-  const { error: updateError } = await supabase
-    .from("advances")
-    .update({
-      status: "approved",
-      approved_at: nowIso,
-      approved_by: session.user.id,
-      rejection_reason: null,
-      updated_at: nowIso,
-    })
-    .eq("id", advanceId)
-    .eq("status", "submitted");
+  const [{ error: updateError }, recipients] = await Promise.all([
+    supabase
+      .from("advances")
+      .update({
+        status: "approved",
+        approved_at: nowIso,
+        approved_by: user.id,
+        rejection_reason: null,
+        updated_at: nowIso,
+      })
+      .eq("id", advanceId)
+      .eq("status", "submitted"),
+    getEmployeeAndApproverEmails(supabase, advance.user_id),
+  ]);
 
   if (updateError) throw new Error(`No se pudo aprobar el anticipo: ${updateError.message}`);
-
-  const recipients = await getEmployeeAndApproverEmails(supabase, advance.user_id);
 
   await sendAdvanceWebhook(getAdvanceWebhookUrl("approved"), {
     advanceId,
@@ -231,10 +244,8 @@ export async function approveAdvanceAction(formData: FormData) {
 }
 
 export async function rejectAdvanceAction(formData: FormData) {
-  const { supabase, session, me } = await getCurrentUser();
-  if (!me || (me.role !== "aprobador" && me.role !== "admin")) {
-    throw new Error("No tenes permisos para rechazar anticipos.");
-  }
+  const { supabase, user, me } = await getCurrentUser();
+  assertRole(me, ["aprobador", "admin"], "No tenes permisos para rechazar anticipos.");
 
   const advanceId = (formData.get("advanceId") as string | null)?.trim();
   const rejectionReason = (formData.get("rejectionReason") as string | null)?.trim() ?? "";
@@ -249,34 +260,28 @@ export async function rejectAdvanceAction(formData: FormData) {
 
   if (advanceError || !advance) throw new Error("No se encontro el anticipo.");
   if (advance.status !== "submitted") throw new Error("Solo se pueden rechazar solicitudes enviadas.");
-  if (advance.user_id === session.user.id) {
-    throw new Error("No podes rechazar tus propios anticipos.");
-  }
+  if (advance.user_id === user.id) throw new Error("No podes rechazar tus propios anticipos.");
 
-  if (me.role === "aprobador") {
-    const { data: assignment } = await supabase
-      .from("supervision_assignments")
-      .select("id")
-      .eq("supervisor_id", session.user.id)
-      .eq("employee_id", advance.user_id)
-      .maybeSingle();
-    if (!assignment) throw new Error("No tenes este empleado asignado para aprobacion.");
+  if (me!.role === "aprobador") {
+    await assertApproverAssignment(supabase, user.id, advance.user_id);
   }
 
   const nowIso = new Date().toISOString();
-  const { error: updateError } = await supabase
-    .from("advances")
-    .update({
-      status: "rejected",
-      rejection_reason: rejectionReason,
-      updated_at: nowIso,
-    })
-    .eq("id", advanceId)
-    .eq("status", "submitted");
+  const [{ error: updateError }, recipients] = await Promise.all([
+    supabase
+      .from("advances")
+      .update({
+        status: "rejected",
+        rejection_reason: rejectionReason,
+        updated_at: nowIso,
+      })
+      .eq("id", advanceId)
+      .eq("status", "submitted"),
+    getEmployeeAndApproverEmails(supabase, advance.user_id),
+  ]);
 
   if (updateError) throw new Error(`No se pudo rechazar el anticipo: ${updateError.message}`);
 
-  const recipients = await getEmployeeAndApproverEmails(supabase, advance.user_id);
   await sendAdvanceWebhook(getAdvanceWebhookUrl("rejected"), {
     advanceId,
     employeeId: advance.user_id,
@@ -299,8 +304,8 @@ export async function payAdvanceAction(
   _prevState: AdvanceActionState | null,
   formData: FormData,
 ): Promise<AdvanceActionState> {
-  const { supabase, session, me } = await getCurrentUser();
-  if (!me || (me.role !== "pagador" && me.role !== "admin")) {
+  const { supabase, user, me } = await getCurrentUser();
+  if (!me || !["pagador", "admin"].includes(me.role ?? "")) {
     return { ok: false, error: "No tenes permisos para registrar el pago de anticipos." };
   }
 
@@ -321,7 +326,8 @@ export async function payAdvanceAction(
 
   if (advanceError || !advance) return { ok: false, error: "No se encontro la solicitud de anticipo." };
 
-  if (advance.created_report_id) {
+  // Idempotencia: si ya fue pagado y tiene rendicion creada, retornar sin reprocesar.
+  if (advance.status === "paid" && advance.created_report_id) {
     return { ok: true, advanceId, createdReportId: advance.created_report_id };
   }
 
@@ -363,6 +369,8 @@ export async function payAdvanceAction(
   const reportTitle = advance.title?.trim() || "Rendicion por anticipo";
   const nowIso = new Date().toISOString();
 
+  // Crea la rendicion con todos los campos de liquidacion en un solo INSERT,
+  // evitando el UPDATE posterior que antes era necesario.
   const { data: report, error: reportError } = await supabase
     .from("weekly_reports")
     .insert({
@@ -378,6 +386,9 @@ export async function payAdvanceAction(
       budget_currency: advance.currency,
       exchange_rates: Object.keys(exchangeRates).length ? exchangeRates : null,
       advance_amount_usd: advanceAmountUsd,
+      advance_id: advanceId,
+      settlement_direction: "company_pays_employee",
+      settlement_amount_usd: null,
     })
     .select("id")
     .single();
@@ -386,39 +397,29 @@ export async function payAdvanceAction(
     return { ok: false, error: `No se pudo crear la rendicion del anticipo: ${reportError?.message ?? "Error desconocido"}` };
   }
 
-  const { error: linkError } = await supabase
-    .from("advances")
-    .update({
-      status: "paid",
-      paid_at: nowIso,
-      paid_by: session.user.id,
-      payment_date: paymentDate,
-      payment_receipt_url: publicUrl,
-      payment_receipt_path: objectKey,
-      created_report_id: report.id,
-      updated_at: nowIso,
-    })
-    .eq("id", advanceId)
-    .eq("status", "approved");
+  // El update del anticipo y la carga de emails son independientes: se ejecutan en paralelo.
+  const [{ error: linkError }, recipients] = await Promise.all([
+    supabase
+      .from("advances")
+      .update({
+        status: "paid",
+        paid_at: nowIso,
+        paid_by: user.id,
+        payment_date: paymentDate,
+        payment_receipt_url: publicUrl,
+        payment_receipt_path: objectKey,
+        created_report_id: report.id,
+        updated_at: nowIso,
+      })
+      .eq("id", advanceId)
+      .eq("status", "approved"),
+    getEmployeeAndApproverEmails(supabase, advance.user_id),
+  ]);
 
   if (linkError) {
     return { ok: false, error: `No se pudo completar el pago del anticipo: ${linkError.message}` };
   }
 
-  const { error: reportUpdateError } = await supabase
-    .from("weekly_reports")
-    .update({
-      advance_id: advanceId,
-      advance_amount_usd: advanceAmountUsd,
-      settlement_direction: "company_pays_employee",
-      settlement_amount_usd: null,
-    })
-    .eq("id", report.id);
-  if (reportUpdateError) {
-    console.error("No se pudo vincular la rendicion al anticipo:", reportUpdateError);
-  }
-
-  const recipients = await getEmployeeAndApproverEmails(supabase, advance.user_id);
   await sendAdvanceWebhook(getAdvanceWebhookUrl("paid"), {
     advanceId,
     reportId: report.id,
@@ -446,4 +447,36 @@ export async function payAdvanceAction(
   revalidatePath("/dashboard/advances");
   revalidatePath(`/dashboard/reports/${report.id}`);
   return { ok: true, advanceId, createdReportId: report.id };
+}
+
+// Elimina un anticipo: primero la fila en BD, luego el archivo en Storage.
+// El orden importa: un orphan en Storage es menos grave que un registro sin archivo.
+export async function deleteAdvanceAction(advanceId: string): Promise<AdvanceActionState> {
+  const { supabase, me } = await getCurrentUser();
+  if (!me || me.role !== "admin") {
+    return { ok: false, error: "No tenes permisos para eliminar anticipos." };
+  }
+
+  const { data: advance } = await supabase
+    .from("advances")
+    .select("payment_receipt_path")
+    .eq("id", advanceId)
+    .maybeSingle();
+
+  const { error } = await supabase.from("advances").delete().eq("id", advanceId);
+  if (error) {
+    return { ok: false, error: `No se pudo eliminar el anticipo: ${error.message}` };
+  }
+
+  if (advance?.payment_receipt_path) {
+    const { error: storageError } = await supabase.storage
+      .from("payment_receipts")
+      .remove([advance.payment_receipt_path]);
+    if (storageError) {
+      console.error("No se pudo eliminar comprobante del anticipo:", storageError);
+    }
+  }
+
+  revalidatePath("/dashboard/admin/advances");
+  return { ok: true };
 }
