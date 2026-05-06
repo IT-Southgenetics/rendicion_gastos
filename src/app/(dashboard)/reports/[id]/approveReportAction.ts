@@ -5,6 +5,7 @@ import { generateExcelExport } from "@/lib/excelGenerator";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { calculateSettlement, totalInUSD } from "@/lib/currency";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 export async function approveReportAction(formData: FormData) {
   "use server";
@@ -15,12 +16,12 @@ export async function approveReportAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (!user || authError) redirect("/login");
 
-  if (!session) {
-    redirect("/login");
+  const me = await getMyProfile(supabase, { user: { id: user.id, email: user.email } });
+  if (!me || !["aprobador", "admin"].includes(me.role ?? "")) {
+    throw new Error("No tenés permisos para aprobar rendiciones.");
   }
 
   const [{ data: report, error: reportError }, { data: expenses, error: expensesError }] =
@@ -37,14 +38,14 @@ export async function approveReportAction(formData: FormData) {
     ]);
 
   if (reportError || !report) {
-    throw new Error("No se encontr? la rendici?n.");
+    throw new Error("No se encontró la rendición.");
   }
-  if (report.user_id === session.user.id) {
-    throw new Error("No podes aprobar tus propias rendiciones.");
+  if (report.user_id === user.id) {
+    throw new Error("No podés aprobar tus propias rendiciones.");
   }
 
   if (expensesError) {
-    throw new Error("No se pudieron obtener los gastos de la rendici?n.");
+    throw new Error("No se pudieron obtener los gastos de la rendición.");
   }
 
   const expenseList = expenses ?? [];
@@ -54,7 +55,7 @@ export async function approveReportAction(formData: FormData) {
 
   if (expenseList.length === 0 || hasAnyNotApproved) {
     throw new Error(
-      "No se puede aprobar la rendici?n si hay gastos pendientes o rechazados.",
+      "No se puede aprobar la rendición si hay gastos pendientes o rechazados.",
     );
   }
 
@@ -65,37 +66,40 @@ export async function approveReportAction(formData: FormData) {
     .single();
 
   if (ownerError) {
-    throw new Error("No se pudo obtener el due?o de la rendici?n.");
+    throw new Error("No se pudo obtener el dueño de la rendición.");
   }
+
+  const closedAtIso = new Date().toISOString();
 
   const { error: updateError } = await supabase
     .from("weekly_reports")
     .update({
       workflow_status: "approved",
       status: "closed",
-      closed_by: session.user.id,
-      closed_at: new Date().toISOString(),
+      closed_by: user.id,
+      closed_at: closedAtIso,
     })
     .eq("id", reportId);
 
   if (updateError) {
-    throw new Error("No se pudo aprobar la rendici?n.");
+    throw new Error("No se pudo aprobar la rendición.");
   }
 
   const webhookUrl =
     process.env.N8N_WEBHOOK_URL_APROBAR_CIERRE ??
     process.env.N8N_WEBHOOK_URL_RENDICION_APROBADA ??
     "https://n8n.srv908725.hstgr.cloud/webhook/aprobar-cierre";
+
   if (webhookUrl) {
-    // Obtener usuarios chusmas (auditor?a) para copiar en la notificaci?n
-    const { data: chusmasData, error: chusmasError } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("role", "chusmas");
+    // Fetch chusmas y pagadores en paralelo
+    const [{ data: chusmasData, error: chusmasError }, { data: payers, error: payersError }] = await Promise.all([
+      supabase.from("profiles").select("email").eq("role", "chusmas"),
+      supabase.from("profiles").select("email").eq("role", "pagador"),
+    ]);
 
     if (chusmasError) {
       console.error(
-        "No se pudieron obtener usuarios chusmas para la notificaci?n de rendici?n aprobada:",
+        "No se pudieron obtener usuarios chusmas para la notificación de rendición aprobada:",
         chusmasError,
       );
     }
@@ -116,14 +120,8 @@ export async function approveReportAction(formData: FormData) {
 
     const chusmaEmails = effectiveChusmaEmailsList.join(",");
 
-    // Obtener todos los usuarios con rol "pagador"
-    const { data: payers, error: payersError } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("role", "pagador");
-
     let effectivePayers = payers ?? [];
-    // Si por RLS no devolvi? filas, intentar fallback con service role (si est? configurado).
+    // Si por RLS no devolvió filas, intentar fallback con service role (si está configurado).
     if (effectivePayers.length === 0) {
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -135,7 +133,7 @@ export async function approveReportAction(formData: FormData) {
           .eq("role", "pagador");
         if (adminPayersError) {
           console.error(
-            "Fallback service role: no se pudieron obtener pagadores para aprobaci?n:",
+            "Fallback service role: no se pudieron obtener pagadores para aprobación:",
             adminPayersError,
           );
         } else {
@@ -150,14 +148,14 @@ export async function approveReportAction(formData: FormData) {
 
     if (payersError) {
       console.error(
-        "No se pudieron obtener los usuarios con rol pagador para la notificaci?n de rendici?n aprobada:",
+        "No se pudieron obtener los usuarios con rol pagador para la notificación de rendición aprobada:",
         payersError,
       );
     }
 
     const payerEmailArray = Array.from(
       new Set(
-        (effectivePayers ?? [])
+        effectivePayers
           .map((p) => p.email)
           .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
           .map((e) => e.trim().toLowerCase()),
@@ -183,19 +181,16 @@ export async function approveReportAction(formData: FormData) {
       excelBase64 = buffer.toString("base64");
       excelName = fileName;
     } catch (e) {
-      console.error("No se pudo generar Excel para webhook (rendici?n aprobada):", e);
+      console.error("No se pudo generar Excel para webhook (rendición aprobada):", e);
     }
 
-    const closedAtIso = new Date().toISOString();
-    const budgetCurrency = report?.budget_currency ?? "USD";
-    const reportExchangeRates = (report?.exchange_rates ?? {}) as Record<string, number>;
+    const budgetCurrency = report.budget_currency ?? "USD";
+    const reportExchangeRates = (report.exchange_rates ?? {}) as Record<string, number>;
 
-    const currencies = new Set(
-      expenseList.map((e) => (e as any).currency ?? "UYU"),
-    );
+    const currencies = new Set(expenseList.map((e) => e.currency ?? "UYU"));
     const isMulticurrency = currencies.size > 1 || (currencies.size === 1 && !currencies.has(budgetCurrency));
 
-    const expenseDetails = expenseList.map((e: any) => ({
+    const expenseDetails = expenseList.map((e) => ({
       id: e.id,
       amount: Number(e.amount),
       currency: e.currency ?? "UYU",
@@ -204,23 +199,24 @@ export async function approveReportAction(formData: FormData) {
       merchant_name: e.merchant_name ?? "",
       expense_date: e.expense_date ?? "",
     }));
+
     const reportTotalUsd = totalInUSD(
-      expenseList.map((e) => ({ amount: Number((e as any).amount ?? 0), currency: (e as any).currency ?? "UYU" })),
+      expenseList.map((e) => ({ amount: Number(e.amount ?? 0), currency: e.currency ?? "UYU" })),
       reportExchangeRates,
     );
-    const advanceAmountUsd = typeof (report as any).advance_amount_usd === "number"
-      ? Number((report as any).advance_amount_usd)
+    const advanceAmountUsd = typeof report.advance_amount_usd === "number"
+      ? Number(report.advance_amount_usd)
       : null;
     const settlement = (typeof reportTotalUsd === "number" && typeof advanceAmountUsd === "number")
       ? calculateSettlement(reportTotalUsd, advanceAmountUsd)
       : null;
 
     const payload = {
-      reportId: reportId,
-      reportTitle: report?.title ?? "",
+      reportId,
+      reportTitle: report.title ?? "",
       employeeName: employeeData?.full_name || "Empleado",
       country: employeeData?.country ?? "",
-      amount: report?.total_amount ?? 0,
+      amount: report.total_amount ?? 0,
       budgetCurrency,
       exchangeRates: reportExchangeRates,
       isMulticurrency,
@@ -240,22 +236,19 @@ export async function approveReportAction(formData: FormData) {
       excelName,
     };
 
-    console.log("Payload Aprobaci?n:", payload);
-
     try {
-      const response = await fetch(webhookUrl as string, {
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!response.ok) {
-        console.error("Error devuelto por n8n (rendici?n aprobada):", await response.text());
+        console.error("Error devuelto por n8n (rendición aprobada):", await response.text());
       }
     } catch (error) {
-      console.error("Error enviando webhook de rendici?n aprobada a N8N:", error);
+      console.error("Error enviando webhook de rendición aprobada a N8N:", error);
     }
   }
 
   revalidatePath(`/dashboard/reports/${reportId}`);
 }
-

@@ -12,7 +12,7 @@ export type AdvanceActionState =
   | { ok: true; advanceId?: string; createdReportId?: string }
   | { ok: false; error: string };
 
-const VALID_CURRENCIES = new Set(ADVANCE_CURRENCIES.map((currency) => currency.value));
+const VALID_CURRENCIES = new Set<string>(ADVANCE_CURRENCIES.map((currency) => currency.value));
 
 function ensureDate(value: FormDataEntryValue | null): string | null {
   const str = typeof value === "string" ? value.trim() : "";
@@ -25,8 +25,6 @@ function toPositiveNumber(value: FormDataEntryValue | null): number | null {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
-// Usa getUser() para validar el JWT contra la API de Supabase (no solo desde cookie).
-// Usa getMyProfile() para incluir el fallback por email y el hardcode de admin.
 async function getCurrentUser() {
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -75,7 +73,6 @@ async function getEmployeeAndApproverEmails(
   };
 }
 
-// Lanza error si el usuario no tiene uno de los roles permitidos.
 function assertRole(
   me: { role: string | null } | null,
   allowed: string[],
@@ -84,7 +81,6 @@ function assertRole(
   if (!me || !allowed.includes(me.role ?? "")) throw new Error(errorMsg);
 }
 
-// Verifica que el aprobador tenga asignado al empleado en supervision_assignments.
 async function assertApproverAssignment(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   supervisorId: string,
@@ -115,7 +111,7 @@ export async function submitNewAdvanceAction(
   const currency = ((formData.get("currency") as string | null) ?? "USD").toUpperCase();
   const description = (formData.get("description") as string | null)?.trim() ?? null;
 
-  if (!title || !advanceDate || !advanceEndDate || !requestedAmount || !VALID_CURRENCIES.has(currency as (typeof ADVANCE_CURRENCIES)[number]["value"])) {
+  if (!title || !advanceDate || !advanceEndDate || !requestedAmount || !VALID_CURRENCIES.has(currency)) {
     return { ok: false, error: "Completa todos los campos obligatorios del anticipo." };
   }
   if (advanceEndDate < advanceDate) {
@@ -240,7 +236,7 @@ export async function approveAdvanceAction(formData: FormData) {
   }, "anticipo aprobado");
 
   revalidatePath("/dashboard/aprobador");
-  revalidatePath("/dashboard/aprobador/advances/" + advanceId);
+  revalidatePath(`/dashboard/aprobador/advances/${advanceId}`);
 }
 
 export async function rejectAdvanceAction(formData: FormData) {
@@ -297,7 +293,7 @@ export async function rejectAdvanceAction(formData: FormData) {
   }, "anticipo rechazado");
 
   revalidatePath("/dashboard/aprobador");
-  revalidatePath("/dashboard/aprobador/advances/" + advanceId);
+  revalidatePath(`/dashboard/aprobador/advances/${advanceId}`);
 }
 
 export async function payAdvanceAction(
@@ -397,7 +393,6 @@ export async function payAdvanceAction(
     return { ok: false, error: `No se pudo crear la rendicion del anticipo: ${reportError?.message ?? "Error desconocido"}` };
   }
 
-  // El update del anticipo y la carga de emails son independientes: se ejecutan en paralelo.
   const [{ error: linkError }, recipients] = await Promise.all([
     supabase
       .from("advances")
@@ -449,7 +444,6 @@ export async function payAdvanceAction(
   return { ok: true, advanceId, createdReportId: report.id };
 }
 
-// Elimina un anticipo: primero la fila en BD, luego el archivo en Storage.
 // El orden importa: un orphan en Storage es menos grave que un registro sin archivo.
 export async function deleteAdvanceAction(advanceId: string): Promise<AdvanceActionState> {
   const { supabase, me } = await getCurrentUser();

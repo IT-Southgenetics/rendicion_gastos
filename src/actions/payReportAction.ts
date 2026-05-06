@@ -1,10 +1,11 @@
- "use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateExcelExport } from "@/lib/excelGenerator";
 import { calculateSettlement, totalInUSD } from "@/lib/currency";
+import { getMyProfile } from "@/lib/auth/getMyProfile";
 
 export type PayReportState =
   | { ok: true }
@@ -14,10 +15,9 @@ export async function payReportAction(
   _prevState: PayReportState | null,
   formData: FormData,
 ): Promise<PayReportState> {
-
   const reportId = formData.get("reportId") as string | null;
   if (!reportId) {
-    return { ok: false as const, error: "reportId requerido" };
+    return { ok: false, error: "reportId requerido" };
   }
 
   const paymentDate = formData.get("paymentDate") as string | null;
@@ -26,78 +26,70 @@ export async function payReportAction(
   const paymentDestination = formData.get("paymentDestination") as string | null;
   const receiptFile = formData.get("receiptFile") as File | null;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    redirect("/login");
-  }
-
   if (!paymentDate || !paymentDestination || !amountPaidRaw) {
-    return { ok: false as const, error: "Completá todos los campos requeridos." };
+    return { ok: false, error: "Completá todos los campos requeridos." };
   }
 
   if (!receiptFile || receiptFile.size <= 0) {
-    return { ok: false as const, error: "Subí un comprobante de pago." };
+    return { ok: false, error: "Subí un comprobante de pago." };
   }
 
-  let publicUrl: string | null = null;
-
-  if (receiptFile.size > 0) {
-    const originalName = receiptFile.name ?? "comprobante";
-    const safeName = originalName
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "") // quita acentos/diacríticos
-      .replace(/[^a-zA-Z0-9._-]/g, "_"); // evita caracteres inválidos (ej: [ ])
-
-    const fileName = `${Date.now()}-${safeName}`;
-    const objectKey = `${reportId}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("payment_receipts")
-      .upload(objectKey, receiptFile, {
-        contentType: receiptFile.type || undefined,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      return {
-        ok: false as const,
-        error: `No se pudo subir el comprobante de pago: ${uploadError.message}`,
-      };
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("payment_receipts")
-      .getPublicUrl(objectKey);
-
-    publicUrl = publicUrlData.publicUrl ?? null;
-  }
-
+  // Validar monto antes de subir el archivo para evitar uploads huérfanos
   const amountPaid = Number(amountPaidRaw);
   if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
-    return { ok: false as const, error: "Monto pagado inválido." };
+    return { ok: false, error: "Monto pagado inválido." };
   }
 
-  // Obtener datos del reporte antes de registrar pago (incluye anticipo vinculado).
+  const supabase = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (!user || authError) redirect("/login");
+
+  const me = await getMyProfile(supabase, { user: { id: user.id, email: user.email } });
+  if (!me || !["pagador", "admin"].includes(me.role ?? "")) {
+    return { ok: false, error: "No tenés permisos para registrar el pago de rendiciones." };
+  }
+
+  const originalName = receiptFile.name ?? "comprobante";
+  const safeName = originalName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "_");
+  const receiptFileName = `${Date.now()}-${safeName}`;
+  const objectKey = `${reportId}/${receiptFileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("payment_receipts")
+    .upload(objectKey, receiptFile, {
+      contentType: receiptFile.type || undefined,
+      upsert: false,
+    });
+
+  if (uploadError) {
+    return { ok: false, error: `No se pudo subir el comprobante de pago: ${uploadError.message}` };
+  }
+
+  const { data: publicUrlData } = supabase.storage.from("payment_receipts").getPublicUrl(objectKey);
+  const publicUrl = publicUrlData.publicUrl;
+
   const { data: reportBeforePayment } = await supabase
     .from("weekly_reports")
     .select("id, user_id, odoo_move_id, exchange_rates, advance_amount_usd")
     .eq("id", reportId)
     .single();
 
-  // Calcular liquidacion neta cuando existe anticipo.
+  // Fetch gastos y perfil del empleado en paralelo (operaciones independientes)
+  const userId = reportBeforePayment?.user_id;
+  const [{ data: reportExpenses }, { data: employeeData }] = await Promise.all([
+    supabase.from("expenses").select("amount, currency, status").eq("report_id", reportId),
+    userId
+      ? supabase.from("profiles").select("full_name, email").eq("id", userId).single()
+      : Promise.resolve({ data: null }),
+  ]);
+
   let settlementDirection: "company_pays_employee" | "employee_returns_company" | "settled_zero" | null = null;
   let settlementAmountUsd: number | null = null;
-  if (typeof reportBeforePayment?.advance_amount_usd === "number") {
-    const { data: reportExpenses } = await supabase
-      .from("expenses")
-      .select("amount, currency, status")
-      .eq("report_id", reportId);
-
-    const nonRejectedExpenses = (reportExpenses ?? []).filter((expense) => expense.status !== "rejected");
+  if (typeof reportBeforePayment?.advance_amount_usd === "number" && reportExpenses) {
+    const nonRejectedExpenses = reportExpenses.filter((expense) => expense.status !== "rejected");
     const totalUsd = totalInUSD(
       nonRejectedExpenses.map((expense) => ({
         amount: Number(expense.amount ?? 0),
@@ -128,73 +120,40 @@ export async function payReportAction(
     .eq("id", reportId);
 
   if (updateError) {
-    return {
-      ok: false as const,
-      error: `No se pudo marcar la rendición como pagada: ${updateError.message}`,
-    };
+    return { ok: false, error: `No se pudo marcar la rendición como pagada: ${updateError.message}` };
   }
 
-  // Obtener datos del empleado dueño de la rendición
-  let employeeEmail = "";
-  let employeeName = "";
-
-  const reportData = reportBeforePayment ?? null;
-
-  if (reportData?.user_id) {
-    const { data: employeeData } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", reportData.user_id)
-      .single();
-
-    employeeEmail = employeeData?.email ?? "";
-    employeeName = employeeData?.full_name ?? "";
-  }
+  const employeeEmail = employeeData?.email ?? "";
+  const employeeName = employeeData?.full_name ?? "";
 
   const webhookUrl = process.env.N8N_WEBHOOK_URL_RENDICION_PAGADA;
   if (webhookUrl) {
-    // Obtener correos de todos los usuarios con rol "pagador"
-    const { data: pagadoresData } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("role", "pagador");
+    // Fetch pagadores, chusmas y aprobadores asignados en paralelo
+    const [{ data: pagadoresData }, { data: chusmasData }, { data: assignments }] = await Promise.all([
+      supabase.from("profiles").select("email").eq("role", "pagador"),
+      supabase.from("profiles").select("email").eq("role", "chusmas"),
+      userId
+        ? supabase
+            .from("supervision_assignments")
+            .select("supervisor_id, profiles!supervision_assignments_supervisor_id_fkey(email)")
+            .eq("employee_id", userId)
+        : Promise.resolve({ data: [] }),
+    ]);
 
     const pagadorEmails = (pagadoresData ?? [])
       .map((p) => p.email)
       .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
       .join(",");
 
-    // Correos de usuarios auditor/chusma
-    const { data: chusmasData } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("role", "chusmas");
-
     const chusmaEmails = (chusmasData ?? [])
       .map((p) => p.email)
       .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
       .join(",");
 
-    // Emails de aprobadores asignados al empleado (pueden ser varios)
-    let aprobadorEmails = "";
-    if (reportData?.user_id) {
-      const { data: assignments, error: assignmentsError } = await supabase
-        .from("supervision_assignments")
-        .select("supervisor_id, profiles!supervision_assignments_supervisor_id_fkey(email)")
-        .eq("employee_id", reportData.user_id);
-
-      if (assignmentsError) {
-        console.error(
-          "No se pudieron obtener aprobadores asignados (supervision_assignments) para el pago de rendición:",
-          assignmentsError,
-        );
-      } else {
-        aprobadorEmails = (assignments ?? [])
-          .map((a) => (a.profiles as { email: string | null } | null)?.email ?? null)
-          .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
-          .join(",");
-      }
-    }
+    const aprobadorEmails = (assignments ?? [])
+      .map((a) => (a.profiles as { email: string | null } | null)?.email ?? null)
+      .filter((e): e is string => typeof e === "string" && e.trim().length > 0)
+      .join(",");
 
     const targetEmails = Array.from(
       new Set(
@@ -212,24 +171,15 @@ export async function payReportAction(
     let excelBase64 = "";
     let excelName = `Rendicion_${reportId.slice(0, 6)}.xlsx`;
     try {
-      const { buffer, fileName } = await generateExcelExport(reportId);
+      const { buffer, fileName: excelFileName } = await generateExcelExport(reportId);
       excelBase64 = buffer.toString("base64");
-      excelName = fileName;
+      excelName = excelFileName;
     } catch (e) {
       console.error("No se pudo generar Excel para webhook (rendición pagada):", e);
     }
 
     try {
-      console.log("Payload hacia n8n (rendición pagada):", {
-        reportId,
-        employeeEmail,
-        pagadorEmails,
-        aprobadorEmails,
-        chusmaEmails,
-        odooMoveId: reportData?.odoo_move_id ?? null,
-        targetEmails,
-      });
-      const response = await fetch(webhookUrl as string, {
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -246,8 +196,8 @@ export async function payReportAction(
           pagadorEmails,
           aprobadorEmails,
           chusmaEmails,
-          odooMoveId: reportData?.odoo_move_id ?? null,
-          // Compatibilidad con flujos n8n antiguos
+          odooMoveId: reportBeforePayment?.odoo_move_id ?? null,
+          // Compatibilidad con flujos n8n anteriores
           targetEmails,
           excelBase64,
           excelName,
@@ -264,6 +214,5 @@ export async function payReportAction(
   revalidatePath(`/dashboard/reports/${reportId}`);
   revalidatePath(`/dashboard/viewer/reports/${reportId}`);
 
-  return { ok: true as const };
+  return { ok: true };
 }
-
