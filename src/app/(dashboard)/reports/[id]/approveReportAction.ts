@@ -6,22 +6,21 @@ import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { runReportApprovedClosure } from "./runReportApprovedClosure";
 
 export async function approveReportAction(formData: FormData) {
-
   const reportId = formData.get("reportId") as string | null;
   if (!reportId) {
     throw new Error("reportId requerido");
   }
 
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (!user || authError) redirect("/login");
 
-  if (!session) {
-    redirect("/login");
+  const me = await getMyProfile(supabase, { user: { id: user.id, email: user.email } });
+  if (!me || !["aprobador", "admin"].includes(me.role ?? "")) {
+    throw new Error("No tenés permisos para aprobar rendiciones.");
   }
 
-  await runReportApprovedClosure(supabase, session.user.id, reportId);
+  await runReportApprovedClosure(supabase, user.id, reportId);
 }
 
 /**
@@ -32,15 +31,12 @@ export async function tryAutoFinalizeReportAfterAllExpensesApprovedAction(
   reportId: string,
 ): Promise<{ ok: boolean; finalized?: boolean; error?: string }> {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (!user || authError) {
     return { ok: false, error: "No hay sesión." };
   }
 
-  const me = await getMyProfile(supabase, session);
+  const me = await getMyProfile(supabase, { user: { id: user.id, email: user.email } });
   if (me?.role !== "admin") {
     return { ok: false, error: "Solo administradores pueden usar esta acción." };
   }
@@ -78,7 +74,7 @@ export async function tryAutoFinalizeReportAfterAllExpensesApprovedAction(
   }
 
   try {
-    await runReportApprovedClosure(supabase, session.user.id, reportId);
+    await runReportApprovedClosure(supabase, user.id, reportId);
   } catch (e) {
     const message = e instanceof Error ? e.message : "No se pudo cerrar la rendición.";
     return { ok: false, error: message };

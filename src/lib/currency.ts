@@ -89,3 +89,14 @@ export function totalInCurrency(
 export function fmt(n: number) {
   return n.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+export function calculateSettlement(totalUsd: number, advanceUsd: number) {
+  const diff = Number(totalUsd) - Number(advanceUsd);
+  if (Math.abs(diff) < 0.000001) {
+    return { direction: "settled_zero" as const, amountUsd: 0 };
+  }
+  if (diff > 0) {
+    return { direction: "company_pays_employee" as const, amountUsd: diff };
+  }
+  return { direction: "employee_returns_company" as const, amountUsd: Math.abs(diff) };
+}

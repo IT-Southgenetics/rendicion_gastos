@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BackButton } from "@/components/ui/BackButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
-import { toUSD, totalInCurrency, fmt } from "@/lib/currency";
+import { toUSD, totalInCurrency, totalInUSD, calculateSettlement, fmt } from "@/lib/currency";
 import { PayReportModal } from "@/components/reports/PayReportModal";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
 
@@ -72,6 +72,24 @@ export default async function ViewerReportDetailPage({ params }: Props) {
     totalInBudgetCurrency !== null &&
     totalInBudgetCurrency > budgetMax
   );
+  const totalUsd = totalInUSD(
+    expenseList
+      .filter((expense) => expense.status !== "rejected")
+      .map((expense) => ({ amount: Number(expense.amount), currency: expense.currency ?? "UYU" })),
+    effectiveRates,
+  );
+  const advanceUsd = typeof (report as any).advance_amount_usd === "number"
+    ? Number((report as any).advance_amount_usd)
+    : null;
+  const settlementPreview = (typeof totalUsd === "number" && typeof advanceUsd === "number")
+    ? calculateSettlement(totalUsd, advanceUsd)
+    : null;
+  const suggestedPaymentAmount = settlementPreview
+    ? settlementPreview.direction === "employee_returns_company"
+      ? 0
+      : settlementPreview.amountUsd
+    : totalInBudgetCurrency;
+  const canPayFromModal = !settlementPreview || settlementPreview.direction !== "employee_returns_company";
 
   const pendingCount = expenseList.filter((e) => e.status === "pending").length;
   const reviewingCount = expenseList.filter((e) => e.status === "reviewing").length;
@@ -178,9 +196,9 @@ export default async function ViewerReportDetailPage({ params }: Props) {
             </span>
           )}
         </div>
-        {isPagador && workflowStatus === "approved" && (
+        {isPagador && workflowStatus === "approved" && canPayFromModal && (
           <div className="w-full sm:ml-auto sm:w-auto">
-            <PayReportModal reportId={report.id} suggestedAmount={totalInBudgetCurrency} />
+            <PayReportModal reportId={report.id} suggestedAmount={suggestedPaymentAmount} />
           </div>
         )}
         {(workflowStatus === "approved" || workflowStatus === "paid") && (
@@ -207,6 +225,33 @@ export default async function ViewerReportDetailPage({ params }: Props) {
       </div>
 
       {/* Información de pago */}
+      {settlementPreview && (
+        <div className="card w-full overflow-hidden">
+          <div className="border-b border-[#f0ecf4] bg-[#f5f1f8] px-4 py-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Liquidacion por anticipo</h2>
+            <p className="text-[0.65rem] text-[var(--color-text-muted)]">Diferencia entre total rendido y anticipo entregado.</p>
+          </div>
+          <div className="grid gap-px bg-[#f0ecf4] sm:grid-cols-3">
+            <div className="bg-white px-4 py-3">
+              <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Total rendido (USD)</p>
+              <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">{fmt(totalUsd ?? 0)}</p>
+            </div>
+            <div className="bg-white px-4 py-3">
+              <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Anticipo (USD)</p>
+              <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">{fmt(advanceUsd ?? 0)}</p>
+            </div>
+            <div className="bg-white px-4 py-3">
+              <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Resultado</p>
+              <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
+                {settlementPreview.direction === "company_pays_employee" && `Empresa paga USD ${fmt(settlementPreview.amountUsd)}`}
+                {settlementPreview.direction === "employee_returns_company" && `Empleado devuelve USD ${fmt(settlementPreview.amountUsd)}`}
+                {settlementPreview.direction === "settled_zero" && "Saldo 0"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {workflowStatus === "paid" && (
         <div className="card w-full overflow-hidden">
           <div className="flex items-center gap-2.5 border-b border-[#f0ecf4] bg-blue-50/50 px-4 py-3">

@@ -1,18 +1,9 @@
 'use client';
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Receipt, FileSpreadsheet, Users, Eye, LogOut, CreditCard } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-
-const baseNavItems = [
-  { href: "/dashboard",            label: "Resumen",     icon: LayoutDashboard, adminOnly: false, supervisorOnly: false, viewerOnly: false },
-  { href: "/dashboard/reports",    label: "Rendiciones", icon: FileSpreadsheet, adminOnly: false, supervisorOnly: false, viewerOnly: false },
-  { href: "/dashboard/expenses",   label: "Histórico",   icon: Receipt,         adminOnly: false, supervisorOnly: false, viewerOnly: false },
-  { href: "/dashboard/aprobador",  label: "Aprobaciones",icon: Eye,             adminOnly: false, supervisorOnly: true,  viewerOnly: false },
-  { href: "/dashboard/chusma-view",label: "Auditoría",   icon: Eye,             adminOnly: false, supervisorOnly: false, viewerOnly: true  },
-  { href: "/dashboard/viewer",     label: "Pagos",       icon: CreditCard,      adminOnly: false, supervisorOnly: false, viewerOnly: false, pagadorOnly: true },
-  { href: "/admin",               label: "Admin",       icon: Users,           adminOnly: true,  supervisorOnly: false, viewerOnly: false },
-];
+import { baseNavItems } from "@/components/layout/navItems";
 
 export function Sidebar({
   isAdmin = false,
@@ -31,9 +22,9 @@ export function Sidebar({
 
   const navItems = baseNavItems.filter((item) => {
     if (item.adminOnly)       return isAdmin;
-    if (item.supervisorOnly)  return isSupervisor;
+    if (item.supervisorOnly)  return isSupervisor || isAdmin;
     if (item.viewerOnly)      return isViewer;
-    if ((item as any).pagadorOnly)     return isPagador;
+    if (item.pagadorOnly)     return isPagador;
     return true;
   });
 
@@ -43,7 +34,7 @@ export function Sidebar({
   }
 
   return (
-    <aside className="hidden lg:flex lg:w-64 flex-col bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-5 py-6">
+    <aside className="hidden xl:flex xl:w-64 flex-col bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-5 py-6">
       <div className="mb-8">
         <div className="text-lg font-semibold tracking-tight">Rendición SG</div>
         <div className="text-xs text-white/70 mt-1">Control de gastos</div>

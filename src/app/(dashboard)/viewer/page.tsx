@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
+import { ViewerAdvancesTable } from "@/components/viewer/ViewerAdvancesTable";
 
 const ROLE_LABELS: Record<string, string> = {
   employee:   "Empleado",
@@ -109,6 +110,14 @@ export default async function ViewerHomePage() {
     .select("id, title, week_start, week_end, status, workflow_status, user_id, expenses(id, status)")
     .in("user_id", employeeIds)
     .order("created_at", { ascending: false });
+
+  const { data: advanceRequests } = await supabase
+    .from("advances")
+    .select("id, user_id, title, advance_date, requested_amount, currency, status, created_report_id, profiles!advances_user_id_fkey(full_name, email)")
+    .in("status", isPagador ? ["approved", "paid"] : ["paid"])
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const advanceRows = advanceRequests ?? [];
 
   const reportsByEmployee: Record<string, typeof reports> = {};
   for (const r of reports ?? []) {
@@ -247,6 +256,37 @@ export default async function ViewerHomePage() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="card w-full overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#f0ecf4] px-4 py-3">
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Solicitudes de anticipo</h2>
+            <p className="text-[0.7rem] text-[var(--color-text-muted)]">
+              {isPagador
+                ? "Gestiona los anticipos aprobados para registrar el pago."
+                : "Anticipos pagados para seguimiento."}
+            </p>
+          </div>
+          <span className="rounded-full bg-[#f5f1f8] px-2 py-0.5 text-[0.65rem] font-semibold text-[var(--color-text-muted)]">
+            {advanceRows.length} registros
+          </span>
+        </div>
+        <div className="p-4 sm:p-5">
+          <ViewerAdvancesTable
+            advances={(advanceRows as Array<{
+              id: string;
+              title: string | null;
+              advance_date: string;
+              requested_amount: number | string;
+              currency: string | null;
+              status: string | null;
+              created_report_id: string | null;
+              profiles: { full_name: string; email: string } | null;
+            }>) ?? []}
+            isPagador={isPagador}
+          />
+        </div>
       </div>
     </div>
   );

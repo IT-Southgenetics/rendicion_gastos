@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import { RealtimeBudgetSection } from "@/components/reports/RealtimeBudgetSection";
-import { toUSD, totalInCurrency, fmt } from "@/lib/currency";
+import { toUSD, totalInCurrency, totalInUSD, calculateSettlement, fmt } from "@/lib/currency";
 import type { Tables } from "@/types/database";
 import { submitReportAction } from "./submitReportAction";
 import { returnReportAction } from "./returnReportAction";
@@ -67,6 +67,8 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
   const isSupervisor = session.user.id !== r.user_id && !isChusma;
   const startDate = new Date(r.week_start + "T12:00:00");
   const endDate   = new Date(r.week_end   + "T12:00:00");
+  const isAutoAdvanceNote = typeof r.notes === "string"
+    && /^Rendicion creada automaticamente desde anticipo\s+[a-f0-9-]+\.$/i.test(r.notes.trim());
 
   const expenseList = (expenses ?? []) as Expense[];
   const nonRejectedExpenses = expenseList.filter((e) => e.status !== "rejected");
@@ -113,6 +115,16 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
     totalInBudgetCurrency !== null &&
     totalInBudgetCurrency > budgetMax
   );
+  const totalUsd = totalInUSD(
+    nonRejectedExpenses.map((e) => ({ amount: Number(e.amount), currency: e.currency ?? "UYU" })),
+    effectiveRates,
+  );
+  const advanceUsd = typeof (r as any).advance_amount_usd === "number"
+    ? Number((r as any).advance_amount_usd)
+    : null;
+  const settlementPreview = (typeof totalUsd === "number" && typeof advanceUsd === "number")
+    ? calculateSettlement(totalUsd, advanceUsd)
+    : null;
 
   const backHref = isOwner ? "/dashboard/reports" : isChusma ? "/dashboard/chusma-view" : "/dashboard/reports";
 
@@ -162,7 +174,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                 {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
               </span>
             </div>
-            {r.notes && (
+            {r.notes && !isAutoAdvanceNote && (
               <p className="mt-1.5 break-words text-sm italic text-[var(--color-text-muted)]">{r.notes}</p>
             )}
           </div>
@@ -231,6 +243,33 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
           status:   e.status ?? "pending",
         }))}
       />
+
+      {settlementPreview && (
+        <div className="card w-full overflow-hidden">
+          <div className="border-b border-[#f0ecf4] bg-[#f5f1f8] px-4 py-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Liquidacion por anticipo</h2>
+            <p className="text-[0.65rem] text-[var(--color-text-muted)]">Resultado neto de la rendicion frente al anticipo pagado.</p>
+          </div>
+          <div className="grid gap-px bg-[#f0ecf4] sm:grid-cols-3">
+            <div className="bg-white px-4 py-3">
+              <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Total rendido (USD)</p>
+              <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">{fmt(totalUsd ?? 0)}</p>
+            </div>
+            <div className="bg-white px-4 py-3">
+              <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Anticipo (USD)</p>
+              <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">{fmt(advanceUsd ?? 0)}</p>
+            </div>
+            <div className="bg-white px-4 py-3">
+              <p className="text-[0.6rem] font-semibold uppercase text-[var(--color-text-muted)]">Resultado</p>
+              <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
+                {settlementPreview.direction === "company_pays_employee" && `Empresa paga USD ${fmt(settlementPreview.amountUsd)}`}
+                {settlementPreview.direction === "employee_returns_company" && `Debes devolver USD ${fmt(settlementPreview.amountUsd)}`}
+                {settlementPreview.direction === "settled_zero" && "Saldo 0"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Información de pago */}
       {workflowStatus === "paid" && (

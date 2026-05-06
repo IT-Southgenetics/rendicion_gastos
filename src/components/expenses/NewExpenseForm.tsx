@@ -115,22 +115,25 @@ export function NewExpenseForm({ reportId, returnTo }: NewExpenseFormProps) {
       return;
     }
 
-    // Disparar webhook a n8n para análisis de factura (empresa / monto)
-    try {
-      await sendExpenseWebhook({
-        id: expense.id,
-        report_id: expense.report_id,
-        user_id: expense.user_id,
-        categoria: expense.category,
-        descripcion: expense.description,
-        monto: Number(expense.amount) || 0,
-        moneda: expense.currency ?? moneda,
-        fecha: expense.expense_date ?? todayStr,
-        comprobante_url: expense.ticket_url ?? allUrls[0],
-      });
-    } catch (err) {
-      console.error("Error enviando webhook de factura a n8n:", err);
-      // No bloqueamos al usuario si falla el webhook
+    // Disparar webhook a n8n solo para formatos que el lector de imagenes soporta.
+    const firstUploadedMimeType = filesUploaded[0]?.mimeType?.toLowerCase() ?? "";
+    if (firstUploadedMimeType.startsWith("image/")) {
+      try {
+        await sendExpenseWebhook({
+          id: expense.id,
+          report_id: expense.report_id,
+          user_id: expense.user_id,
+          categoria: expense.category,
+          descripcion: expense.description,
+          monto: Number(expense.amount) || 0,
+          moneda: expense.currency ?? moneda,
+          fecha: expense.expense_date ?? todayStr,
+          comprobante_url: expense.ticket_url ?? allUrls[0],
+        });
+      } catch (err) {
+        console.error("Error enviando webhook de factura a n8n:", err);
+        // No bloqueamos al usuario si falla el webhook
+      }
     }
 
     toast.success("¡Gasto cargado correctamente!");
