@@ -116,7 +116,7 @@ export function ViewerAdvancesTable({ advances, isPagador }: ViewerAdvancesTable
                           <PayAdvanceModal
                             advanceId={advance.id}
                             amount={Number(advance.requested_amount)}
-                            currency={advance.currency}
+                            currency={advance.currency ?? "USD"}
                             advanceDate={advance.advance_date}
                           />
                         )}
