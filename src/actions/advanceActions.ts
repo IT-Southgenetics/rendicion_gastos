@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 import { sendAdvanceWebhook } from "@/lib/n8n/sendAdvanceWebhook";
 import { getAdvanceWebhookUrl } from "@/lib/n8n/advanceWebhookEnv";
 import { ADVANCE_CURRENCIES } from "@/lib/advances";
@@ -451,13 +453,22 @@ export async function deleteAdvanceAction(advanceId: string): Promise<AdvanceAct
     return { ok: false, error: "No tenes permisos para eliminar anticipos." };
   }
 
-  const { data: advance } = await supabase
+  // Usar service role para evitar conflictos de RLS en operaciones de admin.
+  // El chequeo de rol ya se hizo arriba a nivel de aplicacion.
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const adminClient =
+    serviceRoleKey && supabaseUrl
+      ? createClient<Database>(supabaseUrl, serviceRoleKey)
+      : supabase;
+
+  const { data: advance } = await adminClient
     .from("advances")
     .select("payment_receipt_path")
     .eq("id", advanceId)
     .maybeSingle();
 
-  const { error } = await supabase.from("advances").delete().eq("id", advanceId);
+  const { error } = await adminClient.from("advances").delete().eq("id", advanceId);
   if (error) {
     return { ok: false, error: `No se pudo eliminar el anticipo: ${error.message}` };
   }
