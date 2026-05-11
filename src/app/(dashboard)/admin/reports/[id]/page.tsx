@@ -10,7 +10,6 @@ import { DeleteReportButton } from "@/components/admin/DeleteReportButton";
 import { approveReportAction } from "@/app/(dashboard)/reports/[id]/approveReportAction";
 import { CloseReportButton } from "@/components/reports/CloseReportButton";
 import { NotifyReviewButton } from "@/components/reports/NotifyReviewButton";
-import { ExpenseAdminActions } from "@/components/expenses/ExpenseAdminActions";
 import { toUSD, totalInUSD, fmt } from "@/lib/currency";
 import type { Tables } from "@/types/database";
 
@@ -298,11 +297,6 @@ export default async function AdminReportDetailPage({ params }: Props) {
                     </div>
 
                     <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end">
-                      <ExpenseAdminActions
-                        expenseId={expense.id}
-                        currentStatus={expense.status ?? "pending"}
-                        reportId={report.id}
-                      />
                       <DeleteExpenseButton
                         expenseId={expense.id}
                         description={expense.description}

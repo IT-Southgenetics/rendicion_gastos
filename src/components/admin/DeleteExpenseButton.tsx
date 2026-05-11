@@ -20,11 +20,21 @@ export function DeleteExpenseButton({ expenseId, description, returnTo }: Delete
 
   async function handleDelete() {
     setDeleting(true);
-    const { error } = await supabase.from("expenses").delete().eq("id", expenseId);
+    const { data, error } = await supabase
+      .from("expenses")
+      .delete()
+      .eq("id", expenseId)
+      .select("id");
     setDeleting(false);
 
     if (error) {
       toast.error(`Error al eliminar: ${error.message}`);
+      setConfirming(false);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      toast.error("No se pudo eliminar el gasto (sin permisos).");
       setConfirming(false);
       return;
     }
