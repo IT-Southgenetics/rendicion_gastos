@@ -20,6 +20,16 @@ export function ReopenReportButton({ reportId, workflowStatus }: ReopenReportBut
   const isApproved = workflowStatus === "approved";
   const needsExtraWarning = isPaid || isApproved;
 
+  const currentStateLabel = (() => {
+    switch (workflowStatus) {
+      case "submitted":        return "en revisión";
+      case "needs_correction": return "con correcciones";
+      case "approved":         return "aprobada";
+      case "paid":             return "pagada";
+      default:                 return "cerrada";
+    }
+  })();
+
   async function handleReopen() {
     setLoading(true);
     const { data, error } = await supabase
@@ -52,8 +62,9 @@ export function ReopenReportButton({ reportId, workflowStatus }: ReopenReportBut
       <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 min-w-[280px] max-w-sm">
         <p className="text-sm font-semibold text-amber-800">Reabrir rendición</p>
         <p className="text-xs text-amber-700">
-          La rendición vuelve a estado <strong>abierta</strong> y al empleado le va a
-          permitir cargar o corregir gastos. El flujo de aprobación se reinicia.
+          Esta rendición está <strong>{currentStateLabel}</strong>. Al reabrirla vuelve
+          a estado <strong>abierta</strong>, se reinicia el flujo de aprobación y el
+          empleado podrá cargar o corregir gastos.
         </p>
         {needsExtraWarning && (
           <p className="text-xs font-semibold text-red-700">

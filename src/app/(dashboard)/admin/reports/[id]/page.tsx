@@ -171,7 +171,7 @@ export default async function AdminReportDetailPage({ params }: Props) {
               employeeEmail={user.email}
             />
           )}
-          {!isOpen && (
+          {(!isOpen || workflowStatus !== "draft") && (
             <ReopenReportButton
               reportId={report.id}
               workflowStatus={workflowStatus}
