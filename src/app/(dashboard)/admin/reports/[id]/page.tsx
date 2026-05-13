@@ -7,6 +7,7 @@ import { ExchangeRateEditor } from "@/components/reports/ExchangeRateEditor";
 import { CurrencyBreakdown } from "@/components/reports/CurrencyBreakdown";
 import { DeleteExpenseButton } from "@/components/admin/DeleteExpenseButton";
 import { DeleteReportButton } from "@/components/admin/DeleteReportButton";
+import { ReopenReportButton } from "@/components/admin/ReopenReportButton";
 import { approveReportAction } from "@/app/(dashboard)/reports/[id]/approveReportAction";
 import { CloseReportButton } from "@/components/reports/CloseReportButton";
 import { NotifyReviewButton } from "@/components/reports/NotifyReviewButton";
@@ -168,6 +169,12 @@ export default async function AdminReportDetailPage({ params }: Props) {
               employeeId={report.user_id}
               employeeName={user.full_name}
               employeeEmail={user.email}
+            />
+          )}
+          {!isOpen && (
+            <ReopenReportButton
+              reportId={report.id}
+              workflowStatus={workflowStatus}
             />
           )}
           <DeleteReportButton
