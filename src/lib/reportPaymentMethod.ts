@@ -5,7 +5,7 @@ export const REPORT_PAYMENT_METHOD_OPTIONS: {
   label: string;
 }[] = [
   { value: "employee_paid", label: "Pagado por el empleado" },
-  { value: "corporate_card", label: "Tarjeta de credito" },
+  { value: "corporate_card", label: "Tarjeta de credito corporativa" },
 ];
 
 export function labelForReportPaymentMethod(
