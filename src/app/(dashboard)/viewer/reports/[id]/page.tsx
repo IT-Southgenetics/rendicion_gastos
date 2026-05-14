@@ -6,6 +6,7 @@ import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
 import { toUSD, totalInCurrency, totalInUSD, calculateSettlement, fmt } from "@/lib/currency";
 import { PayReportModal } from "@/components/reports/PayReportModal";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
+import { labelForReportPaymentMethod } from "@/lib/reportPaymentMethod";
 
 const CATEGORY_LABELS: Record<string, string> = {
   transport: "Transporte",
@@ -152,6 +153,12 @@ export default async function ViewerReportDetailPage({ params }: Props) {
             </span>
             {owner?.email && ` · ${owner.email}`}
             {owner?.department && ` · ${owner.department}`}
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+            Medio de pago:{" "}
+            <span className="font-medium text-[var(--color-text-primary)]">
+              {labelForReportPaymentMethod(report.payment_method)}
+            </span>
           </p>
         </div>
       </div>

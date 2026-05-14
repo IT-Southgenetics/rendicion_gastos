@@ -19,7 +19,9 @@ export async function runReportApprovedClosure(
     await Promise.all([
       supabase
         .from("weekly_reports")
-        .select("id, user_id, title, total_amount, budget_currency, exchange_rates")
+        .select(
+          "id, user_id, title, total_amount, budget_currency, exchange_rates, payment_method",
+        )
         .eq("id", reportId)
         .single(),
       supabase
@@ -172,6 +174,8 @@ export async function runReportApprovedClosure(
 
     const closedAtIso = new Date().toISOString();
     const budgetCurrency = report?.budget_currency ?? "USD";
+    const paymentMethod = report.payment_method ?? "employee_paid";
+    const skipOdooEntry = paymentMethod === "corporate_card";
     const reportExchangeRates = (report?.exchange_rates ?? {}) as Record<string, number>;
 
     const currencies = new Set(
@@ -196,6 +200,8 @@ export async function runReportApprovedClosure(
       country: employeeData?.country ?? "",
       amount: report?.total_amount ?? 0,
       budgetCurrency,
+      paymentMethod,
+      skipOdooEntry,
       exchangeRates: reportExchangeRates,
       isMulticurrency,
       expenseDetails,

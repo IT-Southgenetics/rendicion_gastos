@@ -10,6 +10,7 @@ import { PayReportModal } from "@/components/reports/PayReportModal";
 import { ApproveReportButton } from "@/components/reports/ApproveReportButton";
 import { ReturnReportButton } from "@/components/reports/ReturnReportButton";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
+import { labelForReportPaymentMethod } from "@/lib/reportPaymentMethod";
 
 const CATEGORY_LABELS: Record<string, string> = {
   transport:       "Transporte",
@@ -144,6 +145,12 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
             <span className="font-semibold text-[var(--color-text-primary)]">{owner?.full_name ?? "—"}</span>
             {owner?.email && ` · ${owner.email}`}
             {owner?.department && ` · ${owner.department}`}
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+            Medio de pago:{" "}
+            <span className="font-medium text-[var(--color-text-primary)]">
+              {labelForReportPaymentMethod(report.payment_method)}
+            </span>
           </p>
         </div>
       </div>

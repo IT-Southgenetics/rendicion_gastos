@@ -11,6 +11,7 @@ import { submitReportAction } from "./submitReportAction";
 import { returnReportAction } from "./returnReportAction";
 import { approveReportAction } from "./approveReportAction";
 import { SubmitReportButton } from "@/components/reports/SubmitReportButton";
+import { labelForReportPaymentMethod } from "@/lib/reportPaymentMethod";
 
 type WeeklyReport = Tables<"weekly_reports">;
 type Expense      = Tables<"expenses">;
@@ -172,6 +173,13 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                 {startDate.toLocaleDateString("es-UY", { day: "numeric", month: "short" })}
                 {" – "}
                 {endDate.toLocaleDateString("es-UY", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+              <span className="text-[var(--color-text-muted)]">·</span>
+              <span>
+                Medio de pago:{" "}
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  {labelForReportPaymentMethod(r.payment_method)}
+                </span>
               </span>
             </div>
             {r.notes && !isAutoAdvanceNote && (

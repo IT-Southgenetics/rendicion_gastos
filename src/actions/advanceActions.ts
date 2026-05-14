@@ -376,6 +376,7 @@ export async function payAdvanceAction(
       title: reportTitle,
       week_start: advance.advance_date,
       week_end: advance.advance_end_date ?? advance.advance_date,
+      payment_method: "employee_paid",
       status: "open",
       workflow_status: "draft",
       notes: `Rendicion creada automaticamente desde anticipo ${advance.id}.`,

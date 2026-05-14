@@ -466,6 +466,7 @@ export type Database = {
         Row: {
           budget_max: number | null
           budget_currency: string
+          payment_method: string
           closed_at: string | null
           closed_by: string | null
           created_at: string | null
@@ -495,6 +496,7 @@ export type Database = {
         Insert: {
           budget_max?: number | null
           budget_currency?: string
+          payment_method?: string
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string | null
@@ -524,6 +526,7 @@ export type Database = {
         Update: {
           budget_max?: number | null
           budget_currency?: string
+          payment_method?: string
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string | null

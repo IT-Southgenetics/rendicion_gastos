@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateReportWorkbook } from "@/lib/excel/generateReport";
+import { labelForReportPaymentMethod } from "@/lib/reportPaymentMethod";
 
 function safeTitleFromReport(report: {
   title: string | null;
@@ -70,6 +71,7 @@ export async function generateExcelExport(reportId: string): Promise<{
     closedAt: report.closed_at,
     exchangeRates,
     budgetCurrency: report.budget_currency ?? "USD",
+    paymentMethodLabel: labelForReportPaymentMethod(report.payment_method),
     expenses: (expenses ?? []) as any,
   });
 

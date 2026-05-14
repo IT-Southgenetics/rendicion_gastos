@@ -1,0 +1,39 @@
+{
+  "name": "Snippet — IF crear asiento Odoo (aprobar-cierre)",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "payment-not-corporate-card",
+              "leftValue": "={{ $json.body.paymentMethod }}",
+              "rightValue": "corporate_card",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [0, 0],
+      "id": "7f3e9b2a-1c4d-5e6f-8a9b-0c1d2e3f4a5b",
+      "name": "Crear asiento Odoo"
+    }
+  ],
+  "connections": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

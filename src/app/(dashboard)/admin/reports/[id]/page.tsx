@@ -13,6 +13,7 @@ import { CloseReportButton } from "@/components/reports/CloseReportButton";
 import { NotifyReviewButton } from "@/components/reports/NotifyReviewButton";
 import { toUSD, totalInUSD, fmt } from "@/lib/currency";
 import type { Tables } from "@/types/database";
+import { labelForReportPaymentMethod } from "@/lib/reportPaymentMethod";
 
 type Expense = Tables<"expenses">;
 
@@ -122,6 +123,12 @@ export default async function AdminReportDetailPage({ params }: Props) {
             <span className="font-semibold text-[var(--color-text-primary)]">{user?.full_name ?? "—"}</span>
             {" · "}{user?.email}
             {user?.department && ` · ${user.department}`}
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+            Medio de pago:{" "}
+            <span className="font-medium text-[var(--color-text-primary)]">
+              {labelForReportPaymentMethod(report.payment_method)}
+            </span>
           </p>
         </div>
 

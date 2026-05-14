@@ -64,6 +64,7 @@ export function generateReportWorkbook(args: {
   closedAt: string | null;
   exchangeRates: Record<string, number>;
   budgetCurrency: string;
+  paymentMethodLabel?: string | null;
   expenses: ExpenseRow[];
 }) {
   const {
@@ -74,6 +75,7 @@ export function generateReportWorkbook(args: {
     closedAt,
     exchangeRates,
     budgetCurrency,
+    paymentMethodLabel,
     expenses,
   } = args;
 
@@ -90,6 +92,9 @@ export function generateReportWorkbook(args: {
   rows.push([`Período: ${startLabel} — ${endLabel}`]);
   rows.push([`Cierre: ${closedAt ? new Date(closedAt).toLocaleDateString("es-UY") : "Abierta"}`]);
   rows.push([`Moneda de presupuesto: ${budgetCurrency}`]);
+  if (paymentMethodLabel) {
+    rows.push([`Medio de pago: ${paymentMethodLabel}`]);
+  }
   if (hasRates) {
     const ratesSummary = Object.entries(exchangeRates)
       .map(([c, r]) => `1 USD = ${r} ${c}`)

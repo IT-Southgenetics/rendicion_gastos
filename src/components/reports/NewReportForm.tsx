@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  REPORT_PAYMENT_METHOD_OPTIONS,
+  type ReportPaymentMethod,
+} from "@/lib/reportPaymentMethod";
 
 const BUDGET_CURRENCIES = [
   { value: "USD", label: "Dólar (USD)" },
@@ -27,6 +31,7 @@ export function NewReportForm() {
   const [fechaCierre, setFechaCierre] = useState(today);
   const [presupuesto, setPresupuesto] = useState("");
   const [budgetCurrency, setBudgetCurrency] = useState("USD");
+  const [paymentMethod, setPaymentMethod] = useState<ReportPaymentMethod>("employee_paid");
   const [notas, setNotas]             = useState("");
   const [saving, setSaving]           = useState(false);
 
@@ -82,6 +87,7 @@ export function NewReportForm() {
         status:         "open",
         budget_max:     presupuestoNum,
         budget_currency: budgetCurrency,
+        payment_method: paymentMethod,
         notes:          notas.trim() || null,
         exchange_rates: Object.keys(exchange_rates).length > 0 ? exchange_rates : null,
       })
@@ -148,6 +154,25 @@ export function NewReportForm() {
             required
           />
         </div>
+      </div>
+
+      {/* Medio de pago */}
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-[var(--color-text-primary)]">
+          Medio de pago <span className="text-red-500">*</span>
+        </label>
+        <select
+          className="input"
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value as ReportPaymentMethod)}
+          required
+        >
+          {REPORT_PAYMENT_METHOD_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Presupuesto */}

@@ -99,6 +99,16 @@ Se agregó:
 En el webhook de pago también se envía:
 - `odooMoveId` (si existe en la rendición)
 
+### Medio de pago y n8n (aprobar cierre)
+
+- Campo en base: `weekly_reports.payment_method` (`employee_paid` | `corporate_card`), default `employee_paid`.
+- Migración: `supabase/migrations/20260514_add_payment_method_to_weekly_reports.sql`.
+- En el POST al webhook **aprobar-cierre** (`runReportApprovedClosure.ts`) se envían además:
+  - `paymentMethod`: mismo valor que en base de datos.
+  - `skipOdooEntry`: `true` cuando `paymentMethod === 'corporate_card'`.
+
+**Configuración manual en n8n:** después del nodo Webhook, en la rama que hoy va al primer HTTP Request (autenticación Odoo), insertar un **IF** (o Switch) para que la cadena Odoo (auth → código → create `account.move` → `action_post` → `PUT .../odoo-sync`) solo se ejecute cuando `{{ $json.body.skipOdooEntry }}` sea falso (o equivalente: `paymentMethod !== 'corporate_card'`). Si `skipOdooEntry` es verdadero, no llamar a Odoo ni a `odoo-sync`. La rama **Webhook → Excel → correos** debe seguir igual.
+
 ---
 ## Webhook factura (OCR/lectura ticket)
 
