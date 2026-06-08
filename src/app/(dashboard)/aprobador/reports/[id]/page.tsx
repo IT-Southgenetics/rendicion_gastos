@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BackButton } from "@/components/ui/BackButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
-import { toUSD, totalInCurrency, fmt } from "@/lib/currency";
+import { toUSD, totalInCurrency, fmt, sumByCurrency } from "@/lib/currency";
 import { approveReportAction } from "@/app/(dashboard)/reports/[id]/approveReportAction";
 import { returnReportAction } from "@/app/(dashboard)/reports/[id]/returnReportAction";
 import { PayReportModal } from "@/components/reports/PayReportModal";
@@ -200,7 +200,15 @@ export default async function AprobadorReportDetailPage({ params, searchParams }
             </a>
           )}
           {isPagador && workflowStatus === "approved" && (
-            <PayReportModal reportId={report.id} suggestedAmount={totalInBudgetCurrency} />
+            <PayReportModal
+              reportId={report.id}
+              suggestedAmount={totalInBudgetCurrency}
+              amountByCurrency={sumByCurrency(
+                expenseList
+                  .filter((e) => e.status !== "rejected")
+                  .map((e) => ({ amount: Number(e.amount), currency: e.currency ?? "UYU" })),
+              )}
+            />
           )}
           {workflowStatus === "submitted" && (
             <>

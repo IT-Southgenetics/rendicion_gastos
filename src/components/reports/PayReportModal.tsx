@@ -41,12 +41,20 @@ function FormOverlay() {
   );
 }
 
+function formatAmount(value: number | null | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "";
+  return value.toFixed(2);
+}
+
 export function PayReportModal({
   reportId,
   suggestedAmount,
+  amountByCurrency,
 }: {
   reportId: string;
   suggestedAmount?: number | null;
+  /** Suma nominal de los gastos agrupada por moneda original (sin convertir). */
+  amountByCurrency?: Record<string, number> | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -55,10 +63,35 @@ export function PayReportModal({
     null,
   );
 
-  const suggestedDefault = useMemo(() => {
-    if (typeof suggestedAmount !== "number" || !Number.isFinite(suggestedAmount)) return "";
-    return suggestedAmount.toFixed(2);
-  }, [suggestedAmount]);
+  const suggestedDefault = useMemo(
+    () => formatAmount(suggestedAmount),
+    [suggestedAmount],
+  );
+
+  // Monto a mostrar para cada moneda:
+  // - USD mantiene el monto sugerido (respeta el neteo de adelantos).
+  // - El resto usa la suma nominal de los gastos cargados en esa moneda.
+  const amountForCurrency = useMemo(() => {
+    return (cur: string): string => {
+      if (cur === "USD") return suggestedDefault;
+      const nominal = amountByCurrency?.[cur];
+      return formatAmount(nominal);
+    };
+  }, [amountByCurrency, suggestedDefault]);
+
+  const [currency, setCurrency] = useState<string>("USD");
+  const [amount, setAmount] = useState<string>(() => amountForCurrency("USD"));
+
+  // Cuando cambia el monto sugerido (p. ej. al abrir otra rendición) reseteamos.
+  useEffect(() => {
+    setCurrency("USD");
+    setAmount(amountForCurrency("USD"));
+  }, [amountForCurrency]);
+
+  function handleCurrencyChange(nextCurrency: string) {
+    setCurrency(nextCurrency);
+    setAmount(amountForCurrency(nextCurrency));
+  }
 
   const todayDefault = useMemo(() => {
     const d = new Date();
@@ -129,7 +162,8 @@ export function PayReportModal({
                     name="amountPaid"
                     step="0.01"
                     required
-                    defaultValue={suggestedDefault}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
                     className="input text-xs"
                   />
                 </div>
@@ -137,7 +171,13 @@ export function PayReportModal({
                   <label className="block text-xs font-medium text-[var(--color-text-primary)]">
                     Moneda
                   </label>
-                  <select name="paymentCurrency" required defaultValue="USD" className="input text-xs">
+                  <select
+                    name="paymentCurrency"
+                    required
+                    value={currency}
+                    onChange={(e) => handleCurrencyChange(e.target.value)}
+                    className="input text-xs"
+                  >
                     <option value="USD">USD — Dólar</option>
                     <option value="UYU">UYU — Peso uruguayo</option>
                     <option value="ARS">ARS — Peso argentino</option>

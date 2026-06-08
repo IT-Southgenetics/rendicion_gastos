@@ -85,6 +85,22 @@ export function totalInCurrency(
   return sum;
 }
 
+/**
+ * Suma los gastos agrupados por su moneda original, sin convertir.
+ * Devuelve un mapa { "ARS": 173100, "USD": 50, ... } con la suma nominal
+ * de los montos tal como fueron cargados en cada moneda.
+ */
+export function sumByCurrency(
+  expenses: { amount: number; currency: string | null }[],
+): Record<string, number> {
+  const map: Record<string, number> = {};
+  for (const e of expenses) {
+    const cur = e.currency ?? "UYU";
+    map[cur] = (map[cur] ?? 0) + Number(e.amount || 0);
+  }
+  return map;
+}
+
 /** Formato de número a 2 decimales en es-UY */
 export function fmt(n: number) {
   return n.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

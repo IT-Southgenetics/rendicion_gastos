@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BackButton } from "@/components/ui/BackButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ExpenseStatusBadge } from "@/components/expenses/ExpenseStatusBadge";
-import { toUSD, totalInCurrency, totalInUSD, calculateSettlement, fmt } from "@/lib/currency";
+import { toUSD, totalInCurrency, totalInUSD, calculateSettlement, fmt, sumByCurrency } from "@/lib/currency";
 import { PayReportModal } from "@/components/reports/PayReportModal";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { labelForReportPaymentMethod } from "@/lib/reportPaymentMethod";
@@ -91,6 +91,12 @@ export default async function ViewerReportDetailPage({ params }: Props) {
       : settlementPreview.amountUsd
     : totalInBudgetCurrency;
   const canPayFromModal = !settlementPreview || settlementPreview.direction !== "employee_returns_company";
+
+  const amountByCurrency = sumByCurrency(
+    expenseList
+      .filter((e) => e.status !== "rejected")
+      .map((e) => ({ amount: Number(e.amount), currency: e.currency ?? "UYU" })),
+  );
 
   const pendingCount = expenseList.filter((e) => e.status === "pending").length;
   const reviewingCount = expenseList.filter((e) => e.status === "reviewing").length;
@@ -205,7 +211,7 @@ export default async function ViewerReportDetailPage({ params }: Props) {
         </div>
         {isPagador && workflowStatus === "approved" && canPayFromModal && (
           <div className="w-full sm:ml-auto sm:w-auto">
-            <PayReportModal reportId={report.id} suggestedAmount={suggestedPaymentAmount} />
+            <PayReportModal reportId={report.id} suggestedAmount={suggestedPaymentAmount} amountByCurrency={amountByCurrency} />
           </div>
         )}
         {(workflowStatus === "approved" || workflowStatus === "paid") && (
