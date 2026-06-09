@@ -169,6 +169,49 @@ export default async function ViewerReportDetailPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Total de la rendición */}
+      {expenseList.length > 0 && (
+        <div className="card w-full overflow-hidden">
+          <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
+            <div className="min-w-0">
+              <p className="text-[0.6rem] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                Total rendición
+              </p>
+              <p className="mt-0.5 text-2xl font-bold text-[var(--color-text-primary)]">
+                {totalInBudgetCurrency !== null
+                  ? `${budgetCurrency} ${fmt(totalInBudgetCurrency)}`
+                  : "—"}
+              </p>
+            </div>
+            {Object.keys(totalsByCurrency).length > 1 && (
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {Object.entries(totalsByCurrency).map(([cur, total]) => (
+                  <span
+                    key={cur}
+                    className="whitespace-nowrap rounded-full bg-[#f5f1f8] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-text-primary)]"
+                  >
+                    {cur} {fmt(total)}
+                  </span>
+                ))}
+              </div>
+            )}
+            {Object.keys(totalsByCurrency).length === 1 && budgetCurrency !== Object.keys(totalsByCurrency)[0] && totalInBudgetCurrency !== null && (
+              <span className="whitespace-nowrap rounded-full bg-[#f5f1f8] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-text-muted)]">
+                {Object.keys(totalsByCurrency)[0]} {fmt(Object.values(totalsByCurrency)[0])}
+              </span>
+            )}
+          </div>
+          {expenseList.length > 0 && (
+            <div className="border-t border-[#f0ecf4] px-4 py-2 sm:px-5">
+              <p className="text-[0.65rem] text-[var(--color-text-muted)]">
+                {expenseList.length} gasto{expenseList.length !== 1 ? "s" : ""}
+                {rejectedCount > 0 && ` · ${rejectedCount} rechazado${rejectedCount !== 1 ? "s" : ""} no incluido${rejectedCount !== 1 ? "s" : ""}`}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Paid banner */}
       {workflowStatus === "paid" && (
         <div className="flex w-full items-center gap-3 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100/50 px-4 py-3">
