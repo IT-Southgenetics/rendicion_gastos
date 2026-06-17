@@ -5,6 +5,7 @@ import { MobileDrawerNav } from "@/components/layout/MobileDrawerNav";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/auth/getMyProfile";
 import { WeeklyReportsRealtimeRefresher } from "@/components/realtime/WeeklyReportsRealtimeRefresher";
+import { PlatformUpdateAnnouncement } from "@/components/announcements/PlatformUpdateAnnouncement";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServerClient();
@@ -32,6 +33,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <Header mobileLeftSlot={<MobileDrawerNav isAdmin={isAdmin} isSupervisor={isSupervisor} isViewer={isViewer} isPagador={isPagador} />} />
         <main className="min-w-0 flex-1 w-full max-w-full overflow-x-hidden px-4 py-4 xl:px-6 xl:py-6">
           <WeeklyReportsRealtimeRefresher />
+          <PlatformUpdateAnnouncement />
           {children}
         </main>
       </div>
