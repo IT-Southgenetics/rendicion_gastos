@@ -113,6 +113,22 @@ export default async function AdminHomePage() {
           </div>
           <span className="shrink-0 text-[var(--color-text-muted)]">›</span>
         </Link>
+
+        <Link
+          href="/admin/impact"
+          className="card flex w-full min-w-0 items-center gap-2 overflow-hidden p-3 transition-shadow hover:shadow-md sm:gap-3 sm:p-4"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-100 sm:h-10 sm:w-10">
+            <svg className="h-4 w-4 text-[var(--color-primary)] sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">Impacto de la app</p>
+            <p className="truncate text-xs text-[var(--color-text-muted)]">KPIs y métricas del proceso</p>
+          </div>
+          <span className="shrink-0 text-[var(--color-text-muted)]">›</span>
+        </Link>
       </div>
     </div>
   );
