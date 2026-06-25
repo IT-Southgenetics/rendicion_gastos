@@ -1,0 +1,2706 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "rechazar-gasto",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -112,
+          -160
+        ],
+        "id": "0193d74d-fcb6-41de-9ec3-93003f81c472",
+        "name": "Webhook",
+        "webhookId": "16acf73e-e278-424c-b6a5-acc0c029f85a"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.targetEmails }}",
+          "subject": "=❌ Cierre Rechazado: {{ $json.body.employeeName }} - ${{ $json.body.amount }}",
+          "emailType": "text",
+          "message": "=Hola,\n\nLes informamos que el siguiente cierre contiene un gasto que ha sido RECHAZADO por el supervisor.\n\n💬 Motivo del rechazo:\n\"{{ $json.body.comment }}\"\n\nEste gasto se puede apelar o eliminar.\n\nSaludos,\nSistema de Rendición de Gastos - SouthGenetics.",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          96,
+          -160
+        ],
+        "id": "30f01b53-1eca-470f-88e3-49439af54658",
+        "name": "Send a message",
+        "webhookId": "0d040932-a9fc-49ba-a3f6-5421b6aa6adc",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "gasto-corregido",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -48,
+          -176
+        ],
+        "id": "b50e6db6-9271-4207-9331-9660f680fbe9",
+        "name": "Webhook",
+        "webhookId": "eabbd43c-443c-4368-afe5-f4a94eacf145"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.supervisorEmails }}",
+          "subject": "=Rendicion reenviada para aprobación: {{ $json.body.employeeName }}",
+          "message": "=<p>Hola,</p>\n\n<p>El empleado <b>{{ $json.body.employeeName }}</b> ha corregido y reenviado una rendición que habías puesto en revisión.</p>\n\n<p><b>Explicación del empleado:</b><br>\n<i>\"{{ $json.body.employeeResponse }}\"</i></p>\n\n<p>Por favor, ingresa a la plataforma de Rendición de Gastos para revisarlo nuevamente y darle la aprobación final.</p>\n\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/aprobador/reports/{{$json.body.reportId}}?returnTo=%2Fdashboard%2Faprobador%2Femployee%2F{{$json.body.employeeId}}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Revisar Rendición\n  </a>\n</p>\n<br>\n\n<p>Saludos,<br>\n<b>Sistema de Rendición de Gastos - SouthGenetics.</b></p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          160,
+          -176
+        ],
+        "id": "07dd3ddb-4223-42d3-a1f8-3176fb3d01f6",
+        "name": "Send a message",
+        "webhookId": "13e9c0cc-ed45-43d2-be94-1b7308685153",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "nuevo-cierre-rendicion",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -432,
+          -48
+        ],
+        "id": "1872d4dc-b18e-44d4-aae5-b4a15e903645",
+        "name": "Webhook",
+        "webhookId": "db76bce1-c7b0-46a4-b06f-8586bd722706"
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\n\nfor (const item of items) {\n  const body = item.json.body || {};\n\n  // Normalizar supervisorEmails\n  const supervisorEmails = (body.supervisorEmails || '')\n    .split(',')\n    .map(e => e.trim())\n    .filter(Boolean)\n    .join(',');\n\n  item.json.supervisorEmails = supervisorEmails;\n  item.json.hasSupervisorEmails = supervisorEmails.length > 0;\n\n  // Campos útiles en raíz\n  item.json.reportId = body.reportId || '';\n  item.json.employeeId = body.employeeId || '';\n  item.json.employeeName = body.employeeName || '';\n  item.json.targetEmails = body.targetEmails || '';\n  item.json.employeeEmail = body.employeeEmail || '';\n  item.json.reportTitle = body.reportTitle || '';\n\n  // Comercio / Empresa (fallbacks)\n  item.json.comercio = body.comercio || body.merchant || body.merchantName || '';\n  item.json.empresa = body.empresa || body.company || '';\n  item.json.comercioOEmpresa = item.json.comercio || item.json.empresa || 'No informado';\n\n  // Adjunto Excel\n  if (body.excelBase64) {\n    const cleanBase64 = String(body.excelBase64).includes(',')\n      ? String(body.excelBase64).split(',')[1]\n      : String(body.excelBase64);\n\n    item.binary = item.binary || {};\n    item.binary.adjunto_excel = {\n      data: cleanBase64,\n      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n      fileName: body.excelName || 'Rendicion.xlsx'\n    };\n  }\n}\n\nreturn items;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -208,
+          -48
+        ],
+        "id": "555fe468-3bb9-4414-8785-5bcb946d6634",
+        "name": "Code in JavaScript"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{$json.employeeEmail}}",
+          "subject": "=Tu rendición ha sido enviada a revisión",
+          "message": "=<p>Hola,</p>\n\n<p>\n  Te informamos que tu rendición <b>{{ $json.reportTitle || $json.reportId }}</b>\n  ha sido enviada correctamente a tu aprobador para su revisión.\n</p>\n\n<p>\n  Recibirás una notificación una vez que sea aprobada o si se requiere alguna corrección.\n</p>\n\n<p>\n  Link a tu rendición:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/reports/{{ $json.reportId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver mi rendición\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {
+                  "property": "adjunto_excel"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          16,
+          48
+        ],
+        "id": "7fa11334-6b9a-4949-8c9e-c923cce9a6d8",
+        "name": "Mensaje a empleado",
+        "webhookId": "01f8a536-e774-4a5a-ba86-581948fcfea5",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.supervisorEmails }}",
+          "subject": "=Nueva rendición para aprobar de {{ $json.body.employeeName }}",
+          "message": "=<p>Hola,</p>\n\n<p><b>Tu colaborador {{ $json.body.employeeName }} ha cargado una <b>nueva rendición de gastos que requiere tu revisión.</b></p>\n\n<p>Por favor, ingresa a la plataforma de Rendición de Gastos para aprobarla, rechazarla o solicitar una revisión.</p>\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/aprobador/reports/{{$json.body.reportId}}?returnTo=%2Fdashboard%2Faprobador%2Femployee%2F{{$json.body.employeeId}}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver Rendición en el Sistema\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {
+                  "property": "adjunto_excel"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          16,
+          -144
+        ],
+        "id": "0d351799-6d11-4d4f-89eb-b678cbe26e2a",
+        "name": "mensaje a aprobador",
+        "webhookId": "0f2fe3c6-120e-4a6b-8cdb-9751de3740ba",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript": {
+        "main": [
+          [
+            {
+              "node": "mensaje a aprobador",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mensaje a empleado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "revisar-cierre-empleado",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          32,
+          -80
+        ],
+        "id": "d5227a99-3ea3-4e36-a863-a45151877dd5",
+        "name": "Webhook",
+        "webhookId": "b6de1ac6-34aa-493f-8922-c325948fcf35"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.employeeEmail }}",
+          "subject": "=Hubo problemas con tu rendición y se requiere revisión",
+          "message": "=<p>Hola,</p>\n<p>Tu aprobador ha revisado tu rendición de gastos y ha solicitado modificaciones.</p>\n<p><b>Por favor, ingresa al sistema, haz los cambios pertinentes y vuelve a enviarla.</b></p>\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/reports/{{$json.body.reportId}}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Corregir Rendición en el Sistema\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          480,
+          -80
+        ],
+        "id": "be3b56c1-c188-475e-aa7a-2043590ea19d",
+        "name": "Send a message",
+        "webhookId": "ff13a21f-cbed-45e8-9c20-326edbaff499",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "rendicion-pagada",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -416,
+          176
+        ],
+        "id": "ebb4d93f-3119-4814-89a8-5f7ef216dced",
+        "name": "Webhook",
+        "webhookId": "21f13f56-c7ac-49d6-be33-c69661e07cf9"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ ($json.body.aprobadorEmails || '').toString().trim() }}",
+          "subject": "=Rendición pagada a {{ $json.body.employeeEmail }}.",
+          "message": "=<p>Hola,</p>\n\n<p>Te informamos que la rendición <b>{{ $json.body.reportId }}</b> fue pagada.</p>\n\n<ul>\n  <li><b>Fecha de pago:</b> {{ $json.body.paymentDate }}</li>\n  <li><b>Monto pagado:</b> {{ $json.body.amountPaid }}</li>\n  <li><b>Destino:</b> {{ $json.body.paymentDestination }}</li>\n  <li><b>Comprobante:</b> <a href=\"{{ $json.body.paymentReceiptUrl }}\">Ver comprobante de pago</a></li>\n</ul>\n\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/reports/{{ $json.body.reportId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver Rendición en el Sistema\n  </a>\n</p>\n<br>\n\n<p>Saludos,<br>\n<b>Sistema de Rendición de Gastos - SouthGenetics.</b></p>",
+          "options": {
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {
+                  "property": "adjunto_excel"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          32,
+          -112
+        ],
+        "id": "8eb6250d-9719-4c67-81c1-06720ea523cb",
+        "name": "Aprobador email",
+        "webhookId": "71ed7edc-1bef-4c4e-bf85-ad83938cbb87",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.pagadorEmails }}",
+          "subject": "=Registro de Pago Exitoso - Rendición de {{ $json.body.employeeName }}",
+          "message": "=<p>Hola,</p>\n\n<p>El pago de la rendición de <b>{{ $json.body.employeeName }}</b> ha sido registrado correctamente en el sistema.</p>\n\n<ul>\n  <li><b>Monto:</b> ${{ $json.body.amountPaid }}</li>\n  <li><b>Destino:</b> {{ $json.body.paymentDestination }}</li>\n  <li><b>Enlace al comprobante:</b> <a href=\"{{ $json.body.paymentReceiptUrl }}\">Ver comprobante</a></li>\n</ul>\n\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/reports/{{ $json.body.reportId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver Rendición en el Sistema\n  </a>\n</p>\n<br>\n\n<p>Saludos,<br>\n<b>Sistema de Rendición de Gastos - SouthGenetics.</b></p>",
+          "options": {
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {
+                  "property": "adjunto_excel"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          32,
+          80
+        ],
+        "id": "eeaa8c72-9fee-4146-a53c-7665578a90dd",
+        "name": "Pagador email",
+        "webhookId": "4092d206-7aab-45b0-8d29-6c7835057305",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.employeeEmail }}",
+          "subject": "=¡Tu rendición ha sido pagada! - {{ $json.body.employeeName }}",
+          "message": "=<p>Hola <b>{{ $json.body.employeeName }}</b>,</p>\n\n<p>¡Excelentes noticias! El equipo de Finanzas ha procesado el pago de tu rendición de gastos.</p>\n\n<p><b>Detalles del pago:</b></p>\n<ul>\n  <li><b>Fecha de pago:</b> {{ $json.body.paymentDate }}</li>\n  <li><b>Monto depositado:</b> ${{ $json.body.amountPaid }}</li>\n  <li><b>Destino / Cuenta:</b> {{ $json.body.paymentDestination }}</li>\n</ul>\n\n<p>Puedes ingresar a la plataforma para ver tu rendición en estado \"Pagada\" y descargar el comprobante de la transferencia si lo necesitas.</p>\n\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/reports/{{ $json.body.reportId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver Rendición en el Sistema\n  </a>\n</p>\n<br>\n\n<p>Saludos,<br>\n<b>Sistema de Rendición de Gastos - SouthGenetics.</b></p>",
+          "options": {
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {
+                  "property": "adjunto_excel"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          32,
+          272
+        ],
+        "id": "b28e9944-54c8-49c2-9505-6218e46d4dcf",
+        "name": "Empleado email",
+        "webhookId": "578576b2-3cc3-43dc-a897-a58acac07c15",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst webhookData = $('Webhook').first().json.body || {};\n\nfor (const item of items) {\n  item.json = item.json || {};\n\n  // Extraemos TODO a la raíz para que Gmail lo lea fácil\n  item.json.employeeEmail = webhookData.employeeEmail || '';\n  item.json.employeeName = webhookData.employeeName || 'Empleado';\n  item.json.reportId = webhookData.reportId || '';\n  item.json.reportTitle = webhookData.reportTitle || 'Sin Título';\n  item.json.paymentDate = webhookData.paymentDate || '';\n  item.json.amountPaid = webhookData.amountPaid || 0;\n  item.json.paymentDestination = webhookData.paymentDestination || '';\n  item.json.paymentReceiptUrl = webhookData.paymentReceiptUrl || '';\n  \n  // Emails de los otros roles\n  item.json.aprobadorEmails = webhookData.aprobadorEmails || '';\n  item.json.pagadorEmails = webhookData.pagadorEmails || '';\n  item.json.chusmaEmails = webhookData.chusmaEmails || '';\n\n  // Adjuntar Excel\n  if (webhookData.excelBase64) {\n    const cleanBase64 = String(webhookData.excelBase64).includes(',')\n      ? String(webhookData.excelBase64).split(',')[1]\n      : String(webhookData.excelBase64);\n\n    item.binary = item.binary || {};\n    item.binary.adjunto_excel = {\n      data: cleanBase64,\n      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n      fileName: webhookData.excelName || 'Rendicion.xlsx'\n    };\n  }\n}\n\nreturn items;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -192,
+          176
+        ],
+        "id": "08445914-7f0c-401f-89cc-e49c633ebf0a",
+        "name": "Excel",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.chusmaEmails }}",
+          "subject": "=Rendición pagada: {{ $json.employeeName }}",
+          "message": "=<p>Hola,</p>\n\n<p>Te informamos que la rendición de <b>{{ $json.employeeName }}</b> ha sido marcada como <b>PAGADA</b> en el sistema.</p>\n\n<ul>\n  <li><b>ID Reporte:</b> {{ $json.reportId }}</li>\n  <li><b>Monto:</b> ${{ $json.amountPaid }}</li>\n  <li><b>Fecha de Pago:</b> {{ $json.paymentDate }}</li>\n</ul>\n\n<p>Puedes ver el detalle completo y el comprobante aquí:</p>\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/reports/{{ $json.reportId }}\" style=\"background-color: #4b5563; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver Rendición (Solo Lectura)\n  </a>\n</p>\n<br>\n\n<p>Saludos,<br>\n<b>Sistema de Rendición - SouthGenetics.</b></p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          32,
+          464
+        ],
+        "id": "ff1bf511-8c92-49b8-8241-c8bc52fcbbd7",
+        "name": "Mensaje a chusma",
+        "webhookId": "b9b188ff-8b29-426b-9614-7d4230a25a90",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Excel",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Excel": {
+        "main": [
+          [
+            {
+              "node": "Aprobador email",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Pagador email",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Empleado email",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mensaje a chusma",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "nuevo-usuario",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ],
+        "id": "b4faf210-ad04-49ad-a5e2-7500b3db6a46",
+        "name": "Webhook",
+        "webhookId": "8874c3f5-1280-447f-a6c3-65b885ad3446"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.adminEmails }}",
+          "subject": "=Nuevo usuario registrado",
+          "message": "=<div style=\"font-family: sans-serif; color: #374151; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;\">\n  <div style=\"background-color: #6d28d9; padding: 20px; text-align: center;\">\n    <h2 style=\"color: white; margin: 0; font-size: 20px;\"> Nuevo Usuario Registrado</h2>\n  </div>\n  \n  <div style=\"padding: 24px;\">\n    <p>Hola <strong>Equipo de Administración</strong>,</p>\n    \n    <p>Te informamos que una nueva persona se ha registrado en el <strong>Sistema de Rendición de Gastos - SouthGenetics</strong>. Aquí están los detalles para tu revisión:</p>\n    \n    \n    <p>Por favor, ingresá al panel de control para verificar los permisos o realizar ajustes si es necesario.</p>\n    \n    <div style=\"text-align: center; margin-top: 30px;\">\n      <a href=\"https://rendicion.southgenetics.com/admin/users\" style=\"background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">\n        Gestionar Usuarios en el Sistema\n      </a>\n    </div>\n  </div>\n  \n  <div style=\"background-color: #f3f4f6; padding: 15px; text-align: center; font-size: 12px; color: #6b7280;\">\n    <p style=\"margin: 0;\">Saludos,\nSistema de Rendición de Gastos - SouthGenetics.</p>\n  </div>\n</div>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          208,
+          0
+        ],
+        "id": "f426190a-ee7e-4420-92d6-126ae8bde65c",
+        "name": "Send a message",
+        "webhookId": "79eba1d9-cf59-4961-8147-f94d714d8fa4",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "advance-submitted",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -720,
+          -48
+        ],
+        "id": "99044bbd-944d-4d75-8fc6-508553af55f9",
+        "name": "Webhook",
+        "webhookId": "5a595a16-1229-473d-bd21-f299c090ae55"
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $('Webhook').first().json.body || {};\n\nreturn [{\n  json: {\n    advanceId: body.advanceId || body.reportId || '',\n    advanceTitle: body.advanceTitle || body.reportTitle || 'Sin titulo',\n    employeeName: body.employeeName || 'Empleado',\n    employeeEmail: body.employeeEmail || '',\n    approverEmails: body.approverEmails || body.aprobadorEmails || '',\n    amount: body.amount || 0,\n    currency: body.currency || body.budgetCurrency || 'USD'\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -496,
+          -48
+        ],
+        "id": "5c2e9b5c-f434-4869-9c0a-ee1c83c8b5bd",
+        "name": "Preparar datos"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.approverEmails }}",
+          "subject": "=Nuevo adelanto enviado para aprobacion",
+          "message": "==<p>Hola</p>\n\n<p>\n  Te informamos que <b>{{ $json.employeeName }}</b> envío un adelanto para aprobación.\n</p>\n\n<p>\n  <b>Adelanto:</b> {{ $json.title || $json.advanceTitle || $json.advanceId }}<br>\n  <b>Monto:</b> {{ $json.requestedAmount ?? $json.amount ?? \"N/D\" }} {{ $json.currency || \"USD\" }}\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/aprobador/advances/{{ $json.advanceId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Revisar adelanto\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          -272,
+          -144
+        ],
+        "id": "cfab76fd-319f-47b1-aef8-488b5f47eb0b",
+        "name": "Mail a aprobador",
+        "webhookId": "d513adf5-ae83-4173-ad48-7d72197c7f65",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.employeeEmail }}",
+          "subject": "=Tu adelanto fue enviado para aprobacion",
+          "message": "==<p>Hola</p>\n\n<p>\n  Te informamos que tu adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  fue enviado correctamente y quedó pendiente de aprobación.\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/advances/{{ $json.advanceId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver adelanto\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          -272,
+          48
+        ],
+        "id": "912550cf-fb17-42e2-86e7-f091defe1c05",
+        "name": "Mail a empleado",
+        "webhookId": "1d75d9ee-e969-405a-8bbf-ecc33aba12dc",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Preparar datos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar datos": {
+        "main": [
+          [
+            {
+              "node": "Mail a aprobador",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mail a empleado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "advance-approved",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -832,
+          320
+        ],
+        "id": "5a863d5b-7e16-46ab-922e-c4ea8efc10a8",
+        "name": "Webhook",
+        "webhookId": "db9e8b37-4f61-4376-81fd-175507ee13e4"
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $('Webhook').first().json.body || {};\n\nreturn [{\n  json: {\n    advanceId: body.advanceId || body.reportId || '',\n    advanceTitle: body.advanceTitle || body.reportTitle || 'Sin titulo',\n    employeeName: body.employeeName || 'Empleado',\n    employeeEmail: body.employeeEmail || '',\n    approverEmails: body.approverEmails || body.aprobadorEmails || '',\n    pagadorEmails: body.pagadorEmails || '',\n    chusmaEmails: body.chusmaEmails || '',\n    amount: body.amount || 0,\n    currency: body.currency || body.budgetCurrency || 'USD'\n  },\n  binary: body.excelBase64 ? {\n    adjunto_excel: {\n      data: body.excelBase64.includes(',') ? body.excelBase64.split(',')[1] : body.excelBase64,\n      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n      fileName: body.excelName || 'Adelanto_aprobado.xlsx'\n    }\n  } : {}\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -576,
+          320
+        ],
+        "id": "21faca1a-71a3-4af7-84e8-4bb6e681c9b4",
+        "name": "Preparar datos"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.pagadorEmails }}",
+          "subject": "=Adelanto aprobado listo para pagar",
+          "message": "==<p>Hola</p>\n\n<p>\n  Te informamos que el adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  fue APROBADO y ya está listo para pago.\n</p>\n\n<p>\n  <b>Empleado:</b> {{ $json.employeeName || \"N/D\" }}<br>\n  <b>Monto:</b> {{ $json.amount ?? $json.requestedAmount ?? \"N/D\" }} {{ $json.currency || \"USD\" }}\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/advances/{{ $json.advanceId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Gestionar pago\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          -288,
+          16
+        ],
+        "id": "baaddbac-1d3e-43c6-9acf-01f8b1a2d66f",
+        "name": "Mail a pagadores",
+        "webhookId": "4074e945-bb15-4e27-85ee-59f65cfa93ea",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.employeeEmail }}",
+          "subject": "=Tu adelanto fue aprobado",
+          "message": "==<p>Hola</p>\n\n<p>\n  Te informamos que tu adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  fue APROBADO exitosamente y ya pasó a cola de pagos.\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/advances/{{ $json.advanceId }} style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver adelanto\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          -288,
+          224
+        ],
+        "id": "36d34f3e-5115-426d-b3e4-06e45a095311",
+        "name": "Mail a empleado",
+        "webhookId": "aa232b2c-ef22-4a79-92db-efa6761d1860",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.approverEmails }}",
+          "subject": "=Adelanto aprobado correctamente",
+          "message": "==<p>Hola</p>\n\n<p>\n  Confirmamos que el adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  de <b>{{ $json.employeeName || \"N/D\" }}</b> fue aprobado correctamente.\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/aprobador/advances/{{ $json.advanceId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver adelanto\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          -288,
+          416
+        ],
+        "id": "02782130-cf76-4c80-be3f-9b1014a59e5a",
+        "name": "Mail a aprobador",
+        "webhookId": "29e4ad0e-f7bd-4c9c-9b55-5d3d9a6dc218",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.chusmaEmails }}",
+          "subject": "=Adelanto aprobado: {{ $json.employeeName }}",
+          "message": "==<p>Hola</p>\n\n<p>\n  Te informamos que el adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  de <b>{{ $json.employeeName || \"N/D\" }}</b>\n  fue APROBADO y enviado a tesorería para su pago.\n</p>\n\n<p>\n  Adjuntamos el resumen para control.\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/advances/{{ $json.advanceId }}\" style=\"background-color: #4b5563; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver detalle\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          -288,
+          624
+        ],
+        "id": "03517a24-5139-42ef-a14d-95149bc5b4a9",
+        "name": "Mail a chusmas",
+        "webhookId": "1f4a20d4-cf44-4763-b27a-4dc3ce0946c8",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Preparar datos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar datos": {
+        "main": [
+          [
+            {
+              "node": "Mail a pagadores",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mail a empleado",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mail a aprobador",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mail a chusmas",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "advance-rejected",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          16,
+          -144
+        ],
+        "id": "8f07019c-1980-4434-a4a7-b4da2a34f6d9",
+        "name": "Webhook",
+        "webhookId": "ec1e217a-5877-496b-a41e-774c8ce232b3"
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $('Webhook').first().json.body || {};\n\nreturn [{\n  json: {\n    advanceId: body.advanceId || body.reportId || '',\n    advanceTitle: body.advanceTitle || body.reportTitle || 'Sin titulo',\n    employeeName: body.employeeName || 'Empleado',\n    employeeEmail: body.employeeEmail || '',\n    rejectionReason: body.rejectionReason || body.reason || body.motivoRechazo || 'No se especifico motivo.'\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          256,
+          -144
+        ],
+        "id": "c011fc2c-d873-456f-82a5-79e48818fba3",
+        "name": "Preparar datos"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.employeeEmail }}",
+          "subject": "=Tu adelanto fue rechazado",
+          "message": "=<p>Hola</p>\n\n<p>\n  Te informamos que tu adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  fue RECHAZADO.\n</p>\n\n<p>\n  <b>Motivo:</b> {{ $json.rejectionReason || \"Sin motivo especificado\" }}\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/advances/{{ $json.advanceId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver adelanto\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          528,
+          -144
+        ],
+        "id": "a65aab52-61b4-4bfc-89ff-e73954635dd6",
+        "name": "Mail a empleado",
+        "webhookId": "bf106bd1-68b2-4fa3-b6c8-be0a0e6c1a91",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Preparar datos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar datos": {
+        "main": [
+          [
+            {
+              "node": "Mail a empleado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "advance-paid",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -544,
+          304
+        ],
+        "id": "30d78d4d-090b-453d-ad7d-9c054360edd7",
+        "name": "Webhook",
+        "webhookId": "6dae77a2-765f-4e60-bffb-1b4bac1f9c1c"
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $('Webhook').first().json.body || {};\n\nreturn [{\n  json: {\n    advanceId: body.advanceId || body.reportId || '',\n    advanceTitle: body.advanceTitle || body.reportTitle || 'Sin titulo',\n    employeeName: body.employeeName || 'Empleado',\n    employeeEmail: body.employeeEmail || '',\n    approverEmails: body.approverEmails || body.aprobadorEmails || '',\n    pagadorEmails: body.pagadorEmails || '',\n    chusmaEmails: body.chusmaEmails || '',\n    amount: body.amount || 0,\n    currency: body.currency || body.budgetCurrency || 'USD',\n    paidAt: body.paidAt || body.paymentDate || '',\n    paymentReference: body.paymentReference || body.comprobantePago || ''\n  },\n  binary: body.excelBase64 ? {\n    adjunto_excel: {\n      data: body.excelBase64.includes(',') ? body.excelBase64.split(',')[1] : body.excelBase64,\n      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n      fileName: body.excelName || 'Adelanto_pagado.xlsx'\n    }\n  } : {}\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -288,
+          304
+        ],
+        "id": "13511501-ff27-4b1b-8013-a467f180c2a2",
+        "name": "Preparar datos"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.employeeEmail }}",
+          "subject": "=Tu adelanto fue pagado",
+          "message": "=<p>Hola</p>\n\n<p>\n  Te informamos que tu adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  fue PAGADO exitosamente.\n</p>\n\n<p>\n  <b>Monto:</b> {{ $json.amount ?? \"N/D\" }} {{ $json.currency || \"USD\" }}\n  {{ $json.paidAt ? '<br><b>Fecha de pago:</b> ' + $json.paidAt : '' }}\n  {{ $json.paymentReceiptUrl ? '<br><b>Comprobante:</b> <a href=\"' + $json.paymentReceiptUrl + '\" target=\"_blank\" rel=\"noreferrer\">Ver comprobante</a>' : '' }}\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/advances/{{ $json.advanceId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver adelanto\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          0,
+          0
+        ],
+        "id": "ff57a59d-2500-4831-86b4-2c51090f8b4a",
+        "name": "Mail a empleado",
+        "webhookId": "a32a9938-03b4-4ac6-8d21-7510aeb32f76",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.approverEmails }}",
+          "subject": "=Adelanto pagado: {{ $json.employeeName }}",
+          "message": "=<p>Hola</p>\n\n<p>\n  Te informamos que el adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  de <b>{{ $json.employeeName || \"N/D\" }}</b> fue PAGADO.\n</p>\n\n<p>\n  <b>Monto:</b> {{ $json.amount ?? \"N/D\" }} {{ $json.currency || \"USD\" }}\n  {{ $json.paidAt ? '<br><b>Fecha de pago:</b> ' + $json.paidAt : '' }}\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/aprobador/advances/{{ $json.advanceId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver adelanto\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          0,
+          208
+        ],
+        "id": "dff9c680-b8e5-4d08-8c07-24ec3915062f",
+        "name": "Mail a aprobador",
+        "webhookId": "647722fa-3a6d-4bd6-a7d1-b7a754288702",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.pagadorEmails }}",
+          "subject": "=Pago de adelanto confirmado",
+          "message": "=<p>Hola</p>\n\n<p>\n  Confirmamos que el adelanto <b>{{ $json.title || $json.advanceTitle || $json.advanceId }}</b>\n  de <b>{{ $json.employeeName || \"N/D\" }}</b> fue marcado como PAGADO correctamente.\n</p>\n\n<p>\n  <b>Monto:</b> {{ $json.amount ?? \"N/D\" }} {{ $json.currency || \"USD\" }}\n  {{ $json.paidAt ? '<br><b>Fecha de pago:</b> ' + $json.paidAt : '' }}\n  {{ $json.paymentReceiptUrl ? '<br><b>Comprobante:</b> <a href=\"' + $json.paymentReceiptUrl + '\" target=\"_blank\" rel=\"noreferrer\">Ver comprobante</a>' : '' }}\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/advances/{{ $json.advanceId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver adelanto\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          0,
+          400
+        ],
+        "id": "13292f2e-65a6-41a8-ba1a-0d42d8533cc6",
+        "name": "Mail a pagador",
+        "webhookId": "321b94eb-25a6-4b2d-9f1f-4705ab575d8e",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.chusmaEmails }}",
+          "subject": "=Adelanto pagado: {{ $json.employeeName }}",
+          "message": "=<p>Hola</p>\n\n<p>\n  Te informamos que el adelanto de <b>{{ $json.employeeName || \"N/D\" }}</b>\n  fue PAGADO.\n</p>\n\n<p>\n  <b>Adelanto:</b> {{ $json.title || $json.advanceTitle || $json.advanceId }}<br>\n  <b>Monto:</b> {{ $json.amount ?? \"N/D\" }} {{ $json.currency || \"USD\" }}\n  {{ $json.paidAt ? '<br><b>Fecha de pago:</b> ' + $json.paidAt : '' }}\n</p>\n\n<p>\n  Link al adelanto:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/advances/{{ $json.advanceId }}\" style=\"background-color: #4b5563; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver detalle\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          0,
+          608
+        ],
+        "id": "52478a93-26fb-43a1-836c-7effe93ed151",
+        "name": "Mail a chusmas",
+        "webhookId": "2ea59109-12f9-4833-9caf-a720dc28f8ee",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Preparar datos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar datos": {
+        "main": [
+          [
+            {
+              "node": "Mail a empleado",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mail a aprobador",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mail a pagador",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mail a chusmas",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "aprobar-cierre",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -448,
+          384
+        ],
+        "id": "73ddcd46-e77a-47d6-918c-f2c37893cb56",
+        "name": "Webhook",
+        "webhookId": "cbeeee13-7509-4645-bc62-08c054878666"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.pagadorEmails }}",
+          "subject": "=Nueva rendición aprobada lista para Pagar",
+          "message": "=<p>Hola,</p>\n\n\n\n<p>Te informamos que la siguiente rendición ha sido <b>APROBADA exitosamente</b> y ya puedes proceder a pagarla.</p>\n\n\n\n<p>Por favor, recordá <b>subir el comprobante de pago</b> a la plataforma una vez realizada la transferencia.</p>\n\n\n\n<br>\n\n<p>\n\n  <a href=\"https://rendicion.southgenetics.com/dashboard/viewer/reports/{{ $json.reportId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n\n    Pagar Rendición en el Sistema\n\n  </a>\n\n</p>\n\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {
+                  "property": "adjunto_excel"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          0,
+          192
+        ],
+        "id": "dd04d452-8752-4a43-b371-b5181922eff5",
+        "name": "Mensaje a pagador",
+        "webhookId": "61035494-14b0-4de8-b4e9-bd9f14cb0225",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{$json.employeeEmail}}",
+          "subject": "=Tu rendición ha sido aprobada",
+          "message": "=<p>Hola</p>\n\n<p>\n  Te informamos que la rendición <b>{{ $json.reportTitle || $json.reportId }}</b>\n  ha sido APROBADA exitosamente y ya se encuentra en cola de pagos.\n</p>\n\n<p>\n  Link a la rendición:<br><br>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/reports/{{ $json.body.reportId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver rendición\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendición de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {
+                  "property": "adjunto_excel"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          0,
+          384
+        ],
+        "id": "f84d67a3-74ff-462e-925e-87fe30802461",
+        "name": "Mensaje a empleado",
+        "webhookId": "61035494-14b0-4de8-b4e9-bd9f14cb0225",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://southgenetics.odoo.com/jsonrpc",
+          "sendHeaders": true,
+          "specifyHeaders": "json",
+          "jsonHeaders": "{\n  \"Content-Type\": \"application/json\"\n}",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\n      \"zanello1234-southgeneticsv17-main-10564043\",\n      \"nalvez@southgenetics.com\",\n      \"c6693a825154ecac81bed79b2725dbc95ffb8008\",\n      {}\n    ]\n  },\n  \"id\": 1\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          0,
+          576
+        ],
+        "id": "70cfb846-58b7-4d35-9d43-ce3170a83961",
+        "name": "HTTP Request"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://southgenetics.odoo.com/jsonrpc",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          672,
+          576
+        ],
+        "id": "02bfb621-a934-4f89-b1a1-76c55832567d",
+        "name": "HTTP Request1"
+      },
+      {
+        "parameters": {
+          "jsCode": "// FORZAMOS la lectura desde el nodo inicial \"Webhook\"\nconst webhookData = $('Webhook').item.json.body; \nlet odoo_uid = $('HTTP Request').item.json.result;\n\nconst monedaOdoo = {\n  \"UYU\": 45, \"ARS\": 18, \"USD\": 1, \"MXN\": 32, \"CLP\": 44\n};\n\nconst sociedades = {\n  \"Uruguay\": { company_id: 15, account_debe: 3013, account_haber: 12790 },\n  \"Argentina\": { company_id: 11, account_debe: 5942, account_haber: 12789 },\n  \"Chile\": { company_id: 14, account_debe: 2143, account_haber: 12784 },\n  \"Mexico\": { company_id: 3, account_debe: 2577, account_haber: 12785 },\n  \"Regional\": { company_id: 1, account_debe: 2577, account_haber: 12785 }\n};\n\nconst paisCliente = (webhookData.country || \"\").trim();\nconst paisKey = Object.keys(sociedades).find(k => k.toLowerCase() === paisCliente.toLowerCase());\nconst config = sociedades[paisKey] || sociedades[paisCliente.replace('é','e')] || sociedades[\"Uruguay\"];\n\nconst budgetCurrency = webhookData.budgetCurrency || \"UYU\";\nconst odooCurrencyId = monedaOdoo[budgetCurrency] || 45;\nconst rates = webhookData.exchangeRates || {};\n\n// 1. CÁLCULO DE MONTOS\nlet finalAmount = 0; // Valor en la moneda del reporte (MXN, UYU, etc.)\nlet totalUSD = 0;    // Valor convertido a USD (Moneda base de tus sociedades en Odoo)\n\nif (webhookData.expenseDetails && webhookData.expenseDetails.length > 0) {\n    webhookData.expenseDetails.forEach(exp => {\n        let expAmount = parseFloat(exp.amount) || 0;\n        let expCur = exp.currency || \"UYU\";\n        let rateToUsd = rates[expCur] || 1;\n\n        let expInUSD = expCur === \"USD\" ? expAmount : (expAmount / rateToUsd);\n        totalUSD += expInUSD;\n\n        if (expCur === budgetCurrency) {\n            finalAmount += expAmount;\n        } else {\n            let rateFromUsdToBudget = rates[budgetCurrency] || 1;\n            finalAmount += (expCur === \"USD\") ? (expAmount * rateFromUsdToBudget) : (expInUSD * rateFromUsdToBudget);\n        }\n    });\n}\n\nfinalAmount = Math.round(finalAmount * 100) / 100;\ntotalUSD = Math.round(totalUSD * 100) / 100;\n\nconst ref = `Rendición: ${webhookData.reportTitle || 'Sin Título'} - ${webhookData.employeeName || 'Empleado'}`;\n\n// 2. CREACIÓN DE LÍNEAS - CORRECCIÓN DE DEBIT/CREDIT\n// IMPORTANTE: 'debit' y 'credit' siempre van en la moneda de la compañía (USD para cids=3)\nconst line_ids = [\n  [0, 0, {\n    \"name\": ref,\n    \"account_id\": config.account_debe,\n    \"currency_id\": odooCurrencyId,\n    \"amount_currency\": finalAmount, // El valor nominal en MXN\n    \"debit\": totalUSD,              // EL CAMBIO: Ahora mandamos los 6.70 USD aquí\n    \"credit\": 0,\n    \"debit_usd\": totalUSD,\n    \"credit_usd\": 0\n  }],\n  [0, 0, {\n    \"name\": ref,\n    \"account_id\": config.account_haber,\n    \"currency_id\": odooCurrencyId,\n    \"amount_currency\": -finalAmount, // El valor nominal en MXN negativo\n    \"debit\": 0,\n    \"credit\": totalUSD,              // EL CAMBIO: Ahora mandamos los 6.70 USD aquí\n    \"debit_usd\": 0,\n    \"credit_usd\": totalUSD\n  }]\n];\n\nreturn {\n  json: {\n    jsonrpc: \"2.0\",\n    method: \"call\",\n    params: {\n      service: \"object\",\n      method: \"execute_kw\",\n      args: [\n        \"zanello1234-southgeneticsv17-main-10564043\",\n        odoo_uid,\n        \"c6693a825154ecac81bed79b2725dbc95ffb8008\",\n        \"account.move\",\n        \"create\",\n        [{\n          date: new Date().toISOString().split('T')[0],\n          company_id: config.company_id,\n          move_type: \"entry\",\n          ref: ref,\n          line_ids: line_ids\n        }]\n      ]\n    },\n    id: 1\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          448,
+          576
+        ],
+        "id": "e453f459-996a-488d-b480-c6e9fc1f4964",
+        "name": "Code in JavaScript1"
+      },
+      {
+        "parameters": {
+          "jsCode": "const webhookData = $('Webhook').first().json.body || {};\n\nreturn [{\n  json: {\n    employeeEmail: webhookData.employeeEmail || '',\n    pagadorEmails: webhookData.pagadorEmails || '', \n    chusmaEmails: webhookData.chusmaEmails || '', // Importante: capturamos el chusma\n    reportTitle: webhookData.reportTitle || 'Sin Título',\n    employeeName: webhookData.employeeName || 'Empleado',\n    reportId: webhookData.reportId || '',\n    amount: webhookData.amount || 0\n  },\n  binary: webhookData.excelBase64 ? {\n    adjunto_excel: {\n      data: webhookData.excelBase64.includes(',') ? webhookData.excelBase64.split(',')[1] : webhookData.excelBase64,\n      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n      fileName: webhookData.excelName || 'Rendicion.xlsx'\n    }\n  } : {}\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -224,
+          192
+        ],
+        "id": "187af7ee-f3c8-4530-9425-fed6e6e0cbc6",
+        "name": "Excel"
+      },
+      {
+        "parameters": {
+          "method": "PUT",
+          "url": "=https://rendicion-gastos.vercel.app/api/reports/{{ $('Webhook').first().json.body.reportId }}/odoo-sync",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1icWR6c2F0ZWVxdm9uY2R5dnh3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjIxMjQ5MiwiZXhwIjoyMDg3Nzg4NDkyfQ.ZIgTXP-GIDM-J7S8BzR4vWwUvw9YvbQbJqzHGyNu5xQ"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"odooMoveId\": {{ $('HTTP Request1').first().json.result }}\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1120,
+          576
+        ],
+        "id": "e28d0829-b13d-4e05-9352-6fe8fcf51882",
+        "name": "HTTP Request2"
+      },
+      {
+        "parameters": {
+          "mode": "raw",
+          "jsonOutput": "{\n  \"SouthGenetics S.R.L.\":11,\n  \"SouthGenomics S.A.S.\":15,\n  \"PacificGenomics SPA\":14,\n  \"Viaticos con rendicion\":5942,\n  \"Viaticos a pagar\":12789\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          224,
+          576
+        ],
+        "id": "eeacca1c-1ccc-4ca8-b0a7-b324ad527063",
+        "name": "diferentes ids que tienen las compañias y diarios/ cuentas"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://southgenetics.odoo.com/jsonrpc",
+          "sendBody": true,
+          "specifyBody": "=json",
+          "bodyParameters": {
+            "parameters": [
+              {}
+            ]
+          },
+          "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"zanello1234-southgeneticsv17-main-10564043\",\n      {{ $('HTTP Request').first().json.result }},\n      \"c6693a825154ecac81bed79b2725dbc95ffb8008\",\n      \"account.move\",\n      \"action_post\",\n      [[ {{ $('HTTP Request1').first().json.result }} ]]\n    ]\n  },\n  \"id\": 3\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          896,
+          576
+        ],
+        "id": "167503e9-8dda-495b-89c9-bb9b71a69ec9",
+        "name": "Publicar"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.chusmaEmails }}",
+          "subject": "=Rendición pagada: {{ $json.employeeName }}",
+          "message": "=<p>Hola,</p>\n\n<p>Te informamos que la rendición de <b>{{ $json.employeeName }}</b> ha sido <b>APROBADA</b> y ya se envió a tesorería para el pago.</p>\n\n<p>Adjuntamos el resumen en Excel para tu control.</p>\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/viewer/reports/{{ $json.reportId }}\" style=\"background-color: #4b5563; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver Detalle en el Sistema\n  </a>\n</p>\n<br>\n\n<p>Saludos,<br>\n<b>Sistema de Rendición - SouthGenetics.</b></p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          0,
+          0
+        ],
+        "id": "578659ba-b200-4b07-abd8-71e0443964c4",
+        "name": "Mensaje a chusma",
+        "webhookId": "b9b188ff-8b29-426b-9614-7d4230a25a90",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "payment-not-corporate-card",
+                "leftValue": "={{ $json.body.paymentMethod }}",
+                "rightValue": "corporate_card",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEquals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -224,
+          576
+        ],
+        "id": "c9522019-07bd-4eec-b7cf-26dc2bb34eab",
+        "name": "Crear asiento Odoo"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Excel",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Crear asiento Odoo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "diferentes ids que tienen las compañias y diarios/ cuentas",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request1": {
+        "main": [
+          [
+            {
+              "node": "Publicar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript1": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Excel": {
+        "main": [
+          [
+            {
+              "node": "Mensaje a pagador",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mensaje a empleado",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mensaje a chusma",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "diferentes ids que tienen las compañias y diarios/ cuentas": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Publicar": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Crear asiento Odoo": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {
+      "Webhook": [
+        {
+          "headers": {
+            "host": "n8n.srv908725.hstgr.cloud",
+            "user-agent": "node",
+            "content-length": "24972",
+            "accept": "*/*",
+            "accept-encoding": "br, gzip, deflate",
+            "accept-language": "*",
+            "content-type": "application/json",
+            "sec-fetch-mode": "cors",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n.srv908725.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "565879c622fe",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "reportId": "647b4852-7d1c-4827-899e-8ff9ecda60ec",
+            "reportTitle": "Rendicion prueba numero 4",
+            "employeeName": "Nicolás Alvez",
+            "country": "Uruguay",
+            "amount": 227,
+            "budgetCurrency": "USD",
+            "exchangeRates": {
+              "ARS": 1425,
+              "CLP": 930.72,
+              "MXN": 18.111521,
+              "UYU": 40.573961
+            },
+            "isMulticurrency": true,
+            "expenseDetails": [
+              {
+                "id": "0a11a6e7-8408-4b74-b3f1-a9d0850be892",
+                "amount": 227,
+                "currency": "UYU",
+                "description": "Rendicion prueba numero 4",
+                "category": "transport",
+                "merchant_name": "DAC GrupoAgencia Encomiendas del Litoral Ltda",
+                "expense_date": "2026-03-23"
+              }
+            ],
+            "closingDate": "2026-03-31",
+            "closedAt": "2026-03-31T14:20:08.732Z",
+            "employeeEmail": "nalvez@southgenetics.com",
+            "pagadorEmails": "chusmasouth@gmail.com,vvasconcellos@southgenetics.com",
+            "pagadorEmailList": [
+              "chusmasouth@gmail.com",
+              "vvasconcellos@southgenetics.com"
+            ],
+            "chusmaEmails": "lnievas@southgenetics.com,nponce@southgenetics.com",
+            "chusmaEmailList": [
+              "lnievas@southgenetics.com",
+              "nponce@southgenetics.com"
+            ],
+            "targetEmails": "nalvez@southgenetics.com,chusmasouth@gmail.com,vvasconcellos@southgenetics.com",
+            "excelBase64": "UEsDBBQAAAAAAAAAAACkAYS4tQIAALUCAAAaAAAAeGwvX3JlbHMvd29ya2Jvb2sueG1sLnJlbHM8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+DQo8UmVsYXRpb25zaGlwcyB4bWxucz0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL3BhY2thZ2UvMjAwNi9yZWxhdGlvbnNoaXBzIj48UmVsYXRpb25zaGlwIElkPSJySWQxIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzL3dvcmtzaGVldCIgVGFyZ2V0PSJ3b3Jrc2hlZXRzL3NoZWV0MS54bWwiLz48UmVsYXRpb25zaGlwIElkPSJySWQyIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzL3RoZW1lIiBUYXJnZXQ9InRoZW1lL3RoZW1lMS54bWwiLz48UmVsYXRpb25zaGlwIElkPSJySWQzIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzL3N0eWxlcyIgVGFyZ2V0PSJzdHlsZXMueG1sIi8+PFJlbGF0aW9uc2hpcCBJZD0icklkNCIgVHlwZT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcy9zaGVldE1ldGFkYXRhIiBUYXJnZXQ9Im1ldGFkYXRhLnhtbCIvPjwvUmVsYXRpb25zaGlwcz5QSwMEFAAAAAAAAAAAADAPiGveHQAA3h0AABMAAAB4bC90aGVtZS90aGVtZTEueG1sPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9InllcyI/Pg0KPGE6dGhlbWUgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iIG5hbWU9Ik9mZmljZSBUaGVtZSI+PGE6dGhlbWVFbGVtZW50cz48YTpjbHJTY2hlbWUgbmFtZT0iT2ZmaWNlIj48YTpkazE+PGE6c3lzQ2xyIHZhbD0id2luZG93VGV4dCIgbGFzdENscj0iMDAwMDAwIi8+PC9hOmRrMT48YTpsdDE+PGE6c3lzQ2xyIHZhbD0id2luZG93IiBsYXN0Q2xyPSJGRkZGRkYiLz48L2E6bHQxPjxhOmRrMj48YTpzcmdiQ2xyIHZhbD0iMUY0OTdEIi8+PC9hOmRrMj48YTpsdDI+PGE6c3JnYkNsciB2YWw9IkVFRUNFMSIvPjwvYTpsdDI+PGE6YWNjZW50MT48YTpzcmdiQ2xyIHZhbD0iNEY4MUJEIi8+PC9hOmFjY2VudDE+PGE6YWNjZW50Mj48YTpzcmdiQ2xyIHZhbD0iQzA1MDREIi8+PC9hOmFjY2VudDI+PGE6YWNjZW50Mz48YTpzcmdiQ2xyIHZhbD0iOUJCQjU5Ii8+PC9hOmFjY2VudDM+PGE6YWNjZW50ND48YTpzcmdiQ2xyIHZhbD0iODA2NEEyIi8+PC9hOmFjY2VudDQ+PGE6YWNjZW50NT48YTpzcmdiQ2xyIHZhbD0iNEJBQ0M2Ii8+PC9hOmFjY2VudDU+PGE6YWNjZW50Nj48YTpzcmdiQ2xyIHZhbD0iRjc5NjQ2Ii8+PC9hOmFjY2VudDY+PGE6aGxpbms+PGE6c3JnYkNsciB2YWw9IjAwMDBGRiIvPjwvYTpobGluaz48YTpmb2xIbGluaz48YTpzcmdiQ2xyIHZhbD0iODAwMDgwIi8+PC9hOmZvbEhsaW5rPjwvYTpjbHJTY2hlbWU+PGE6Zm9udFNjaGVtZSBuYW1lPSJPZmZpY2UiPjxhOm1ham9yRm9udD48YTpsYXRpbiB0eXBlZmFjZT0iQ2FtYnJpYSIvPjxhOmVhIHR5cGVmYWNlPSIiLz48YTpjcyB0eXBlZmFjZT0iIi8+PGE6Zm9udCBzY3JpcHQ9IkpwYW4iIHR5cGVmYWNlPSLvvK3vvLMg77yw44K044K344OD44KvIi8+PGE6Zm9udCBzY3JpcHQ9IkhhbmciIHR5cGVmYWNlPSLrp5HsnYAg6rOg65SVIi8+PGE6Zm9udCBzY3JpcHQ9IkhhbnMiIHR5cGVmYWNlPSLlrovkvZMiLz48YTpmb250IHNjcmlwdD0iSGFudCIgdHlwZWZhY2U9IuaWsOe0sOaYjumrlCIvPjxhOmZvbnQgc2NyaXB0PSJBcmFiIiB0eXBlZmFjZT0iVGltZXMgTmV3IFJvbWFuIi8+PGE6Zm9udCBzY3JpcHQ9IkhlYnIiIHR5cGVmYWNlPSJUaW1lcyBOZXcgUm9tYW4iLz48YTpmb250IHNjcmlwdD0iVGhhaSIgdHlwZWZhY2U9IlRhaG9tYSIvPjxhOmZvbnQgc2NyaXB0PSJFdGhpIiB0eXBlZmFjZT0iTnlhbGEiLz48YTpmb250IHNjcmlwdD0iQmVuZyIgdHlwZWZhY2U9IlZyaW5kYSIvPjxhOmZvbnQgc2NyaXB0PSJHdWpyIiB0eXBlZmFjZT0iU2hydXRpIi8+PGE6Zm9udCBzY3JpcHQ9IktobXIiIHR5cGVmYWNlPSJNb29sQm9yYW4iLz48YTpmb250IHNjcmlwdD0iS25kYSIgdHlwZWZhY2U9IlR1bmdhIi8+PGE6Zm9udCBzY3JpcHQ9Ikd1cnUiIHR5cGVmYWNlPSJSYWF2aSIvPjxhOmZvbnQgc2NyaXB0PSJDYW5zIiB0eXBlZmFjZT0iRXVwaGVtaWEiLz48YTpmb250IHNjcmlwdD0iQ2hlciIgdHlwZWZhY2U9IlBsYW50YWdlbmV0IENoZXJva2VlIi8+PGE6Zm9udCBzY3JpcHQ9IllpaWkiIHR5cGVmYWNlPSJNaWNyb3NvZnQgWWkgQmFpdGkiLz48YTpmb250IHNjcmlwdD0iVGlidCIgdHlwZWZhY2U9Ik1pY3Jvc29mdCBIaW1hbGF5YSIvPjxhOmZvbnQgc2NyaXB0PSJUaGFhIiB0eXBlZmFjZT0iTVYgQm9saSIvPjxhOmZvbnQgc2NyaXB0PSJEZXZhIiB0eXBlZmFjZT0iTWFuZ2FsIi8+PGE6Zm9udCBzY3JpcHQ9IlRlbHUiIHR5cGVmYWNlPSJHYXV0YW1pIi8+PGE6Zm9udCBzY3JpcHQ9IlRhbWwiIHR5cGVmYWNlPSJMYXRoYSIvPjxhOmZvbnQgc2NyaXB0PSJTeXJjIiB0eXBlZmFjZT0iRXN0cmFuZ2VsbyBFZGVzc2EiLz48YTpmb250IHNjcmlwdD0iT3J5YSIgdHlwZWZhY2U9IkthbGluZ2EiLz48YTpmb250IHNjcmlwdD0iTWx5bSIgdHlwZWZhY2U9IkthcnRpa2EiLz48YTpmb250IHNjcmlwdD0iTGFvbyIgdHlwZWZhY2U9IkRva0NoYW1wYSIvPjxhOmZvbnQgc2NyaXB0PSJTaW5oIiB0eXBlZmFjZT0iSXNrb29sYSBQb3RhIi8+PGE6Zm9udCBzY3JpcHQ9Ik1vbmciIHR5cGVmYWNlPSJNb25nb2xpYW4gQmFpdGkiLz48YTpmb250IHNjcmlwdD0iVmlldCIgdHlwZWZhY2U9IlRpbWVzIE5ldyBSb21hbiIvPjxhOmZvbnQgc2NyaXB0PSJVaWdoIiB0eXBlZmFjZT0iTWljcm9zb2Z0IFVpZ2h1ciIvPjxhOmZvbnQgc2NyaXB0PSJHZW9yIiB0eXBlZmFjZT0iU3lsZmFlbiIvPjwvYTptYWpvckZvbnQ+PGE6bWlub3JGb250PjxhOmxhdGluIHR5cGVmYWNlPSJDYWxpYnJpIi8+PGE6ZWEgdHlwZWZhY2U9IiIvPjxhOmNzIHR5cGVmYWNlPSIiLz48YTpmb250IHNjcmlwdD0iSnBhbiIgdHlwZWZhY2U9Iu+8re+8syDvvLDjgrTjgrfjg4Pjgq8iLz48YTpmb250IHNjcmlwdD0iSGFuZyIgdHlwZWZhY2U9IuunkeydgCDqs6DrlJUiLz48YTpmb250IHNjcmlwdD0iSGFucyIgdHlwZWZhY2U9IuWui+S9kyIvPjxhOmZvbnQgc2NyaXB0PSJIYW50IiB0eXBlZmFjZT0i5paw57Sw5piO6auUIi8+PGE6Zm9udCBzY3JpcHQ9IkFyYWIiIHR5cGVmYWNlPSJBcmlhbCIvPjxhOmZvbnQgc2NyaXB0PSJIZWJyIiB0eXBlZmFjZT0iQXJpYWwiLz48YTpmb250IHNjcmlwdD0iVGhhaSIgdHlwZWZhY2U9IlRhaG9tYSIvPjxhOmZvbnQgc2NyaXB0PSJFdGhpIiB0eXBlZmFjZT0iTnlhbGEiLz48YTpmb250IHNjcmlwdD0iQmVuZyIgdHlwZWZhY2U9IlZyaW5kYSIvPjxhOmZvbnQgc2NyaXB0PSJHdWpyIiB0eXBlZmFjZT0iU2hydXRpIi8+PGE6Zm9udCBzY3JpcHQ9IktobXIiIHR5cGVmYWNlPSJEYXVuUGVuaCIvPjxhOmZvbnQgc2NyaXB0PSJLbmRhIiB0eXBlZmFjZT0iVHVuZ2EiLz48YTpmb250IHNjcmlwdD0iR3VydSIgdHlwZWZhY2U9IlJhYXZpIi8+PGE6Zm9udCBzY3JpcHQ9IkNhbnMiIHR5cGVmYWNlPSJFdXBoZW1pYSIvPjxhOmZvbnQgc2NyaXB0PSJDaGVyIiB0eXBlZmFjZT0iUGxhbnRhZ2VuZXQgQ2hlcm9rZWUiLz48YTpmb250IHNjcmlwdD0iWWlpaSIgdHlwZWZhY2U9Ik1pY3Jvc29mdCBZaSBCYWl0aSIvPjxhOmZvbnQgc2NyaXB0PSJUaWJ0IiB0eXBlZmFjZT0iTWljcm9zb2Z0IEhpbWFsYXlhIi8+PGE6Zm9udCBzY3JpcHQ9IlRoYWEiIHR5cGVmYWNlPSJNViBCb2xpIi8+PGE6Zm9udCBzY3JpcHQ9IkRldmEiIHR5cGVmYWNlPSJNYW5nYWwiLz48YTpmb250IHNjcmlwdD0iVGVsdSIgdHlwZWZhY2U9IkdhdXRhbWkiLz48YTpmb250IHNjcmlwdD0iVGFtbCIgdHlwZWZhY2U9IkxhdGhhIi8+PGE6Zm9udCBzY3JpcHQ9IlN5cmMiIHR5cGVmYWNlPSJFc3RyYW5nZWxvIEVkZXNzYSIvPjxhOmZvbnQgc2NyaXB0PSJPcnlhIiB0eXBlZmFjZT0iS2FsaW5nYSIvPjxhOmZvbnQgc2NyaXB0PSJNbHltIiB0eXBlZmFjZT0iS2FydGlrYSIvPjxhOmZvbnQgc2NyaXB0PSJMYW9vIiB0eXBlZmFjZT0iRG9rQ2hhbXBhIi8+PGE6Zm9udCBzY3JpcHQ9IlNpbmgiIHR5cGVmYWNlPSJJc2tvb2xhIFBvdGEiLz48YTpmb250IHNjcmlwdD0iTW9uZyIgdHlwZWZhY2U9Ik1vbmdvbGlhbiBCYWl0aSIvPjxhOmZvbnQgc2NyaXB0PSJWaWV0IiB0eXBlZmFjZT0iQXJpYWwiLz48YTpmb250IHNjcmlwdD0iVWlnaCIgdHlwZWZhY2U9Ik1pY3Jvc29mdCBVaWdodXIiLz48YTpmb250IHNjcmlwdD0iR2VvciIgdHlwZWZhY2U9IlN5bGZhZW4iLz48L2E6bWlub3JGb250PjwvYTpmb250U2NoZW1lPjxhOmZtdFNjaGVtZSBuYW1lPSJPZmZpY2UiPjxhOmZpbGxTdHlsZUxzdD48YTpzb2xpZEZpbGw+PGE6c2NoZW1lQ2xyIHZhbD0icGhDbHIiLz48L2E6c29saWRGaWxsPjxhOmdyYWRGaWxsIHJvdFdpdGhTaGFwZT0iMSI+PGE6Z3NMc3Q+PGE6Z3MgcG9zPSIwIj48YTpzY2hlbWVDbHIgdmFsPSJwaENsciI+PGE6dGludCB2YWw9IjUwMDAwIi8+PGE6c2F0TW9kIHZhbD0iMzAwMDAwIi8+PC9hOnNjaGVtZUNscj48L2E6Z3M+PGE6Z3MgcG9zPSIzNTAwMCI+PGE6c2NoZW1lQ2xyIHZhbD0icGhDbHIiPjxhOnRpbnQgdmFsPSIzNzAwMCIvPjxhOnNhdE1vZCB2YWw9IjMwMDAwMCIvPjwvYTpzY2hlbWVDbHI+PC9hOmdzPjxhOmdzIHBvcz0iMTAwMDAwIj48YTpzY2hlbWVDbHIgdmFsPSJwaENsciI+PGE6dGludCB2YWw9IjE1MDAwIi8+PGE6c2F0TW9kIHZhbD0iMzUwMDAwIi8+PC9hOnNjaGVtZUNscj48L2E6Z3M+PC9hOmdzTHN0PjxhOmxpbiBhbmc9IjE2MjAwMDAwIiBzY2FsZWQ9IjEiLz48L2E6Z3JhZEZpbGw+PGE6Z3JhZEZpbGwgcm90V2l0aFNoYXBlPSIxIj48YTpnc0xzdD48YTpncyBwb3M9IjAiPjxhOnNjaGVtZUNsciB2YWw9InBoQ2xyIj48YTp0aW50IHZhbD0iMTAwMDAwIi8+PGE6c2hhZGUgdmFsPSIxMDAwMDAiLz48YTpzYXRNb2QgdmFsPSIxMzAwMDAiLz48L2E6c2NoZW1lQ2xyPjwvYTpncz48YTpncyBwb3M9IjEwMDAwMCI+PGE6c2NoZW1lQ2xyIHZhbD0icGhDbHIiPjxhOnRpbnQgdmFsPSI1MDAwMCIvPjxhOnNoYWRlIHZhbD0iMTAwMDAwIi8+PGE6c2F0TW9kIHZhbD0iMzUwMDAwIi8+PC9hOnNjaGVtZUNscj48L2E6Z3M+PC9hOmdzTHN0PjxhOmxpbiBhbmc9IjE2MjAwMDAwIiBzY2FsZWQ9IjAiLz48L2E6Z3JhZEZpbGw+PC9hOmZpbGxTdHlsZUxzdD48YTpsblN0eWxlTHN0PjxhOmxuIHc9Ijk1MjUiIGNhcD0iZmxhdCIgY21wZD0ic25nIiBhbGduPSJjdHIiPjxhOnNvbGlkRmlsbD48YTpzY2hlbWVDbHIgdmFsPSJwaENsciI+PGE6c2hhZGUgdmFsPSI5NTAwMCIvPjxhOnNhdE1vZCB2YWw9IjEwNTAwMCIvPjwvYTpzY2hlbWVDbHI+PC9hOnNvbGlkRmlsbD48YTpwcnN0RGFzaCB2YWw9InNvbGlkIi8+PC9hOmxuPjxhOmxuIHc9IjI1NDAwIiBjYXA9ImZsYXQiIGNtcGQ9InNuZyIgYWxnbj0iY3RyIj48YTpzb2xpZEZpbGw+PGE6c2NoZW1lQ2xyIHZhbD0icGhDbHIiLz48L2E6c29saWRGaWxsPjxhOnByc3REYXNoIHZhbD0ic29saWQiLz48L2E6bG4+PGE6bG4gdz0iMzgxMDAiIGNhcD0iZmxhdCIgY21wZD0ic25nIiBhbGduPSJjdHIiPjxhOnNvbGlkRmlsbD48YTpzY2hlbWVDbHIgdmFsPSJwaENsciIvPjwvYTpzb2xpZEZpbGw+PGE6cHJzdERhc2ggdmFsPSJzb2xpZCIvPjwvYTpsbj48L2E6bG5TdHlsZUxzdD48YTplZmZlY3RTdHlsZUxzdD48YTplZmZlY3RTdHlsZT48YTplZmZlY3RMc3Q+PGE6b3V0ZXJTaGR3IGJsdXJSYWQ9IjQwMDAwIiBkaXN0PSIyMDAwMCIgZGlyPSI1NDAwMDAwIiByb3RXaXRoU2hhcGU9IjAiPjxhOnNyZ2JDbHIgdmFsPSIwMDAwMDAiPjxhOmFscGhhIHZhbD0iMzgwMDAiLz48L2E6c3JnYkNscj48L2E6b3V0ZXJTaGR3PjwvYTplZmZlY3RMc3Q+PC9hOmVmZmVjdFN0eWxlPjxhOmVmZmVjdFN0eWxlPjxhOmVmZmVjdExzdD48YTpvdXRlclNoZHcgYmx1clJhZD0iNDAwMDAiIGRpc3Q9IjIzMDAwIiBkaXI9IjU0MDAwMDAiIHJvdFdpdGhTaGFwZT0iMCI+PGE6c3JnYkNsciB2YWw9IjAwMDAwMCI+PGE6YWxwaGEgdmFsPSIzNTAwMCIvPjwvYTpzcmdiQ2xyPjwvYTpvdXRlclNoZHc+PC9hOmVmZmVjdExzdD48L2E6ZWZmZWN0U3R5bGU+PGE6ZWZmZWN0U3R5bGU+PGE6ZWZmZWN0THN0PjxhOm91dGVyU2hkdyBibHVyUmFkPSI0MDAwMCIgZGlzdD0iMjMwMDAiIGRpcj0iNTQwMDAwMCIgcm90V2l0aFNoYXBlPSIwIj48YTpzcmdiQ2xyIHZhbD0iMDAwMDAwIj48YTphbHBoYSB2YWw9IjM1MDAwIi8+PC9hOnNyZ2JDbHI+PC9hOm91dGVyU2hkdz48L2E6ZWZmZWN0THN0PjxhOnNjZW5lM2Q+PGE6Y2FtZXJhIHByc3Q9Im9ydGhvZ3JhcGhpY0Zyb250Ij48YTpyb3QgbGF0PSIwIiBsb249IjAiIHJldj0iMCIvPjwvYTpjYW1lcmE+PGE6bGlnaHRSaWcgcmlnPSJ0aHJlZVB0IiBkaXI9InQiPjxhOnJvdCBsYXQ9IjAiIGxvbj0iMCIgcmV2PSIxMjAwMDAwIi8+PC9hOmxpZ2h0UmlnPjwvYTpzY2VuZTNkPjxhOnNwM2Q+PGE6YmV2ZWxUIHc9IjYzNTAwIiBoPSIyNTQwMCIvPjwvYTpzcDNkPjwvYTplZmZlY3RTdHlsZT48L2E6ZWZmZWN0U3R5bGVMc3Q+PGE6YmdGaWxsU3R5bGVMc3Q+PGE6c29saWRGaWxsPjxhOnNjaGVtZUNsciB2YWw9InBoQ2xyIi8+PC9hOnNvbGlkRmlsbD48YTpncmFkRmlsbCByb3RXaXRoU2hhcGU9IjEiPjxhOmdzTHN0PjxhOmdzIHBvcz0iMCI+PGE6c2NoZW1lQ2xyIHZhbD0icGhDbHIiPjxhOnRpbnQgdmFsPSI0MDAwMCIvPjxhOnNhdE1vZCB2YWw9IjM1MDAwMCIvPjwvYTpzY2hlbWVDbHI+PC9hOmdzPjxhOmdzIHBvcz0iNDAwMDAiPjxhOnNjaGVtZUNsciB2YWw9InBoQ2xyIj48YTp0aW50IHZhbD0iNDUwMDAiLz48YTpzaGFkZSB2YWw9Ijk5MDAwIi8+PGE6c2F0TW9kIHZhbD0iMzUwMDAwIi8+PC9hOnNjaGVtZUNscj48L2E6Z3M+PGE6Z3MgcG9zPSIxMDAwMDAiPjxhOnNjaGVtZUNsciB2YWw9InBoQ2xyIj48YTpzaGFkZSB2YWw9IjIwMDAwIi8+PGE6c2F0TW9kIHZhbD0iMjU1MDAwIi8+PC9hOnNjaGVtZUNscj48L2E6Z3M+PC9hOmdzTHN0PjxhOnBhdGggcGF0aD0iY2lyY2xlIj48YTpmaWxsVG9SZWN0IGw9IjUwMDAwIiB0PSItODAwMDAiIHI9IjUwMDAwIiBiPSIxODAwMDAiLz48L2E6cGF0aD48L2E6Z3JhZEZpbGw+PGE6Z3JhZEZpbGwgcm90V2l0aFNoYXBlPSIxIj48YTpnc0xzdD48YTpncyBwb3M9IjAiPjxhOnNjaGVtZUNsciB2YWw9InBoQ2xyIj48YTp0aW50IHZhbD0iODAwMDAiLz48YTpzYXRNb2QgdmFsPSIzMDAwMDAiLz48L2E6c2NoZW1lQ2xyPjwvYTpncz48YTpncyBwb3M9IjEwMDAwMCI+PGE6c2NoZW1lQ2xyIHZhbD0icGhDbHIiPjxhOnNoYWRlIHZhbD0iMzAwMDAiLz48YTpzYXRNb2QgdmFsPSIyMDAwMDAiLz48L2E6c2NoZW1lQ2xyPjwvYTpncz48L2E6Z3NMc3Q+PGE6cGF0aCBwYXRoPSJjaXJjbGUiPjxhOmZpbGxUb1JlY3QgbD0iNTAwMDAiIHQ9IjUwMDAwIiByPSI1MDAwMCIgYj0iNTAwMDAiLz48L2E6cGF0aD48L2E6Z3JhZEZpbGw+PC9hOmJnRmlsbFN0eWxlTHN0PjwvYTpmbXRTY2hlbWU+PC9hOnRoZW1lRWxlbWVudHM+PGE6b2JqZWN0RGVmYXVsdHM+PGE6c3BEZWY+PGE6c3BQci8+PGE6Ym9keVByLz48YTpsc3RTdHlsZS8+PGE6c3R5bGU+PGE6bG5SZWYgaWR4PSIxIj48YTpzY2hlbWVDbHIgdmFsPSJhY2NlbnQxIi8+PC9hOmxuUmVmPjxhOmZpbGxSZWYgaWR4PSIzIj48YTpzY2hlbWVDbHIgdmFsPSJhY2NlbnQxIi8+PC9hOmZpbGxSZWY+PGE6ZWZmZWN0UmVmIGlkeD0iMiI+PGE6c2NoZW1lQ2xyIHZhbD0iYWNjZW50MSIvPjwvYTplZmZlY3RSZWY+PGE6Zm9udFJlZiBpZHg9Im1pbm9yIj48YTpzY2hlbWVDbHIgdmFsPSJsdDEiLz48L2E6Zm9udFJlZj48L2E6c3R5bGU+PC9hOnNwRGVmPjxhOmxuRGVmPjxhOnNwUHIvPjxhOmJvZHlQci8+PGE6bHN0U3R5bGUvPjxhOnN0eWxlPjxhOmxuUmVmIGlkeD0iMiI+PGE6c2NoZW1lQ2xyIHZhbD0iYWNjZW50MSIvPjwvYTpsblJlZj48YTpmaWxsUmVmIGlkeD0iMCI+PGE6c2NoZW1lQ2xyIHZhbD0iYWNjZW50MSIvPjwvYTpmaWxsUmVmPjxhOmVmZmVjdFJlZiBpZHg9IjEiPjxhOnNjaGVtZUNsciB2YWw9ImFjY2VudDEiLz48L2E6ZWZmZWN0UmVmPjxhOmZvbnRSZWYgaWR4PSJtaW5vciI+PGE6c2NoZW1lQ2xyIHZhbD0idHgxIi8+PC9hOmZvbnRSZWY+PC9hOnN0eWxlPjwvYTpsbkRlZj48L2E6b2JqZWN0RGVmYXVsdHM+PGE6ZXh0cmFDbHJTY2hlbWVMc3QvPjwvYTp0aGVtZT5QSwMEFAAAAAAAAAAAAFX0BJRaBAAAWgQAAA0AAAB4bC9zdHlsZXMueG1sPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9InllcyI/Pg0KPHN0eWxlU2hlZXQgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9zcHJlYWRzaGVldG1sLzIwMDYvbWFpbiIgeG1sbnM6dnQ9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9vZmZpY2VEb2N1bWVudC8yMDA2L2RvY1Byb3BzVlR5cGVzIj48bnVtRm10cyBjb3VudD0iMSI+PG51bUZtdCBudW1GbXRJZD0iNTYiIGZvcm1hdENvZGU9IiZxdW90O+S4iuWNiC/kuIvljYggJnF1b3Q7aGgmcXVvdDvmmYImcXVvdDttbSZxdW90O+WIhiZxdW90O3NzJnF1b3Q756eSICZxdW90OyIvPjwvbnVtRm10cz48Zm9udHMgY291bnQ9IjEiPjxmb250PjxzeiB2YWw9IjEyIi8+PGNvbG9yIHRoZW1lPSIxIi8+PG5hbWUgdmFsPSJDYWxpYnJpIi8+PGZhbWlseSB2YWw9IjIiLz48c2NoZW1lIHZhbD0ibWlub3IiLz48L2ZvbnQ+PC9mb250cz48ZmlsbHMgY291bnQ9IjIiPjxmaWxsPjxwYXR0ZXJuRmlsbCBwYXR0ZXJuVHlwZT0ibm9uZSIvPjwvZmlsbD48ZmlsbD48cGF0dGVybkZpbGwgcGF0dGVyblR5cGU9ImdyYXkxMjUiLz48L2ZpbGw+PC9maWxscz48Ym9yZGVycyBjb3VudD0iMSI+PGJvcmRlcj48bGVmdC8+PHJpZ2h0Lz48dG9wLz48Ym90dG9tLz48ZGlhZ29uYWwvPjwvYm9yZGVyPjwvYm9yZGVycz48Y2VsbFN0eWxlWGZzIGNvdW50PSIxIj48eGYgbnVtRm10SWQ9IjAiIGZvbnRJZD0iMCIgZmlsbElkPSIwIiBib3JkZXJJZD0iMCIvPjwvY2VsbFN0eWxlWGZzPjxjZWxsWGZzIGNvdW50PSIxIj48eGYgbnVtRm10SWQ9IjAiIGZvbnRJZD0iMCIgZmlsbElkPSIwIiBib3JkZXJJZD0iMCIgeGZJZD0iMCIgYXBwbHlOdW1iZXJGb3JtYXQ9IjEiLz48L2NlbGxYZnM+PGNlbGxTdHlsZXMgY291bnQ9IjEiPjxjZWxsU3R5bGUgbmFtZT0iTm9ybWFsIiB4ZklkPSIwIiBidWlsdGluSWQ9IjAiLz48L2NlbGxTdHlsZXM+PGR4ZnMgY291bnQ9IjAiLz48dGFibGVTdHlsZXMgY291bnQ9IjAiIGRlZmF1bHRUYWJsZVN0eWxlPSJUYWJsZVN0eWxlTWVkaXVtOSIgZGVmYXVsdFBpdm90U3R5bGU9IlBpdm90U3R5bGVNZWRpdW00Ii8+PC9zdHlsZVNoZWV0PlBLAwQUAAAAAAAAAAAAO/zQ99oJAADaCQAAGAAAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz4NCjx3b3Jrc2hlZXQgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9zcHJlYWRzaGVldG1sLzIwMDYvbWFpbiIgeG1sbnM6cj0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcyI+PGRpbWVuc2lvbiByZWY9IkExOkoxMiIvPjxzaGVldFZpZXdzPjxzaGVldFZpZXcgd29ya2Jvb2tWaWV3SWQ9IjAiLz48L3NoZWV0Vmlld3M+PHNoZWV0RGF0YT48cm93IHI9IjEiPjxjIHI9IkExIiB0PSJzdHIiPjx2PlJlbmRpY2nDs246IFJlbmRpY2lvbiBwcnVlYmEgbnVtZXJvIDQ8L3Y+PC9jPjwvcm93Pjxyb3cgcj0iMiI+PGMgcj0iQTIiIHQ9InN0ciI+PHY+RW1wbGVhZG86IE5pY29sw6FzIEFsdmV6PC92PjwvYz48L3Jvdz48cm93IHI9IjMiPjxjIHI9IkEzIiB0PSJzdHIiPjx2PlBlcsOtb2RvOiAzMS8zLzIwMjYg4oCUIDMxLzMvMjAyNjwvdj48L2M+PC9yb3c+PHJvdyByPSI0Ij48YyByPSJBNCIgdD0ic3RyIj48dj5DaWVycmU6IDMxLzMvMjAyNjwvdj48L2M+PC9yb3c+PHJvdyByPSI1Ij48YyByPSJBNSIgdD0ic3RyIj48dj5Nb25lZGEgZGUgcHJlc3VwdWVzdG86IFVTRDwvdj48L2M+PC9yb3c+PHJvdyByPSI2Ij48YyByPSJBNiIgdD0ic3RyIj48dj5UaXBvcyBkZSBjYW1iaW86IDEgVVNEID0gNDAuNTczOTYxIFVZVSB8IDEgVVNEID0gMTguMTExNTIxIE1YTiB8IDEgVVNEID0gOTMwLjcyIENMUCB8IDEgVVNEID0gMTQyNSBBUlM8L3Y+PC9jPjwvcm93Pjxyb3cgcj0iOCI+PGMgcj0iQTgiIHQ9InN0ciI+PHY+RmVjaGE8L3Y+PC9jPjxjIHI9IkI4IiB0PSJzdHIiPjx2PkNhdGVnb3LDrWE8L3Y+PC9jPjxjIHI9IkM4IiB0PSJzdHIiPjx2PkRlc2NyaXBjacOzbjwvdj48L2M+PGMgcj0iRDgiIHQ9InN0ciI+PHY+Q29tZXJjaW8gLyBFbXByZXNhPC92PjwvYz48YyByPSJFOCIgdD0ic3RyIj48dj5Nb250bzwvdj48L2M+PGMgcj0iRjgiIHQ9InN0ciI+PHY+TW9uZWRhPC92PjwvYz48YyByPSJHOCIgdD0ic3RyIj48dj5FcXVpdi4gVVNEPC92PjwvYz48YyByPSJIOCIgdD0ic3RyIj48dj5Fc3RhZG88L3Y+PC9jPjxjIHI9Ikk4IiB0PSJzdHIiPjx2Pk1vdGl2byByZWNoYXpvPC92PjwvYz48YyByPSJKOCIgdD0ic3RyIj48dj5Db21wcm9iYW50ZTwvdj48L2M+PC9yb3c+PHJvdyByPSI5Ij48YyByPSJBOSIgdD0ic3RyIj48dj4yMy8zLzIwMjY8L3Y+PC9jPjxjIHI9IkI5IiB0PSJzdHIiPjx2PlRyYW5zcG9ydGU8L3Y+PC9jPjxjIHI9IkM5IiB0PSJzdHIiPjx2PlJlbmRpY2lvbiBwcnVlYmEgbnVtZXJvIDQ8L3Y+PC9jPjxjIHI9IkQ5IiB0PSJzdHIiPjx2PkRBQyBHcnVwb0FnZW5jaWEgRW5jb21pZW5kYXMgZGVsIExpdG9yYWwgTHRkYTwvdj48L2M+PGMgcj0iRTkiPjx2PjIyNzwvdj48L2M+PGMgcj0iRjkiIHQ9InN0ciI+PHY+VVlVPC92PjwvYz48YyByPSJHOSI+PHY+NS41OTwvdj48L2M+PGMgcj0iSDkiIHQ9InN0ciI+PHY+QXByb2JhZG88L3Y+PC9jPjxjIHI9Ikk5IiB0PSJzdHIiPjx2Pjwvdj48L2M+PGMgcj0iSjkiIHQ9InN0ciI+PHY+aHR0cHM6Ly9tYnFkenNhdGVlcXZvbmNkeXZ4dy5zdXBhYmFzZS5jby9zdG9yYWdlL3YxL29iamVjdC9wdWJsaWMvY29tcHJvYmFudGVzL2FkMzYzYWY4LWEzZmMtNDNkZS04M2M4LTc0ZjhhZDUzZjUwMC8xNzc0OTY2NzkyNzg2X29nNWJsMDAwOGhuLnBkZjwvdj48L2M+PC9yb3c+PHJvdyByPSIxMSI+PGMgcj0iQTExIiB0PSJzdHIiPjx2Pjwvdj48L2M+PGMgcj0iQjExIiB0PSJzdHIiPjx2Pjwvdj48L2M+PGMgcj0iQzExIiB0PSJzdHIiPjx2Pjwvdj48L2M+PGMgcj0iRDExIiB0PSJzdHIiPjx2PlRPVEFMIFVZVTwvdj48L2M+PGMgcj0iRTExIj48dj4yMjc8L3Y+PC9jPjxjIHI9IkYxMSIgdD0ic3RyIj48dj5VWVU8L3Y+PC9jPjxjIHI9IkcxMSIgdD0ic3RyIj48dj48L3Y+PC9jPjxjIHI9IkgxMSIgdD0ic3RyIj48dj48L3Y+PC9jPjxjIHI9IkkxMSIgdD0ic3RyIj48dj48L3Y+PC9jPjxjIHI9IkoxMSIgdD0ic3RyIj48dj48L3Y+PC9jPjwvcm93Pjxyb3cgcj0iMTIiPjxjIHI9IkExMiIgdD0ic3RyIj48dj48L3Y+PC9jPjxjIHI9IkIxMiIgdD0ic3RyIj48dj48L3Y+PC9jPjxjIHI9IkMxMiIgdD0ic3RyIj48dj48L3Y+PC9jPjxjIHI9IkQxMiIgdD0ic3RyIj48dj5UT1RBTCBVU0Q8L3Y+PC9jPjxjIHI9IkUxMiIgdD0ic3RyIj48dj48L3Y+PC9jPjxjIHI9IkYxMiIgdD0ic3RyIj48dj48L3Y+PC9jPjxjIHI9IkcxMiI+PHY+NS41OTwvdj48L2M+PGMgcj0iSDEyIiB0PSJzdHIiPjx2Pjwvdj48L2M+PGMgcj0iSTEyIiB0PSJzdHIiPjx2Pjwvdj48L2M+PGMgcj0iSjEyIiB0PSJzdHIiPjx2Pjwvdj48L2M+PC9yb3c+PC9zaGVldERhdGE+PGlnbm9yZWRFcnJvcnM+PGlnbm9yZWRFcnJvciBudW1iZXJTdG9yZWRBc1RleHQ9IjEiIHNxcmVmPSJBMTpKMTIiLz48L2lnbm9yZWRFcnJvcnM+PC93b3Jrc2hlZXQ+UEsDBBQAAAAAAAAAAABggACBiAMAAIgDAAAPAAAAeGwvbWV0YWRhdGEueG1sPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9InllcyI/Pg0KPG1ldGFkYXRhIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvc3ByZWFkc2hlZXRtbC8yMDA2L21haW4iIHhtbG5zOnhscmQ9Imh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vb2ZmaWNlL3NwcmVhZHNoZWV0bWwvMjAxNy9yaWNoZGF0YSIgeG1sbnM6eGRhPSJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL29mZmljZS9zcHJlYWRzaGVldG1sLzIwMTcvZHluYW1pY2FycmF5Ij4KICA8bWV0YWRhdGFUeXBlcyBjb3VudD0iMSI+CiAgICA8bWV0YWRhdGFUeXBlIG5hbWU9IlhMREFQUiIgbWluU3VwcG9ydGVkVmVyc2lvbj0iMTIwMDAwIiBjb3B5PSIxIiBwYXN0ZUFsbD0iMSIgcGFzdGVWYWx1ZXM9IjEiIG1lcmdlPSIxIiBzcGxpdEZpcnN0PSIxIiByb3dDb2xTaGlmdD0iMSIgY2xlYXJGb3JtYXRzPSIxIiBjbGVhckNvbW1lbnRzPSIxIiBhc3NpZ249IjEiIGNvZXJjZT0iMSIgY2VsbE1ldGE9IjEiLz4KICA8L21ldGFkYXRhVHlwZXM+CiAgPGZ1dHVyZU1ldGFkYXRhIG5hbWU9IlhMREFQUiIgY291bnQ9IjEiPgogICAgPGJrPgogICAgICA8ZXh0THN0PgogICAgICAgIDxleHQgdXJpPSJ7YmRiYjhjZGMtZmExZS00OTZlLWE4NTctM2MzZjMwYzAyOWMzfSI+CiAgICAgICAgICA8eGRhOmR5bmFtaWNBcnJheVByb3BlcnRpZXMgZkR5bmFtaWM9IjEiIGZDb2xsYXBzZWQ9IjAiLz4KICAgICAgICA8L2V4dD4KICAgICAgPC9leHRMc3Q+CiAgICA8L2JrPgogIDwvZnV0dXJlTWV0YWRhdGE+CiAgPGNlbGxNZXRhZGF0YSBjb3VudD0iMSI+CiAgICA8Yms+CiAgICAgIDxyYyB0PSIxIiB2PSIwIi8+CiAgICA8L2JrPgogIDwvY2VsbE1ldGFkYXRhPgo8L21ldGFkYXRhPlBLAwQUAAAAAAAAAAAAd/aYIkUBAABFAQAADwAAAHhsL3dvcmtib29rLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz4NCjx3b3JrYm9vayB4bWxucz0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL3NwcmVhZHNoZWV0bWwvMjAwNi9tYWluIiB4bWxuczpyPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzIj48d29ya2Jvb2tQciBjb2RlTmFtZT0iVGhpc1dvcmtib29rIi8+PHNoZWV0cz48c2hlZXQgbmFtZT0iUmVuZGljaW9uIiBzaGVldElkPSIxIiByOmlkPSJySWQxIi8+PC9zaGVldHM+PC93b3JrYm9vaz5QSwMEFAAAAAAAAAAAAEpqEflMAgAATAIAAAsAAABfcmVscy8ucmVsczw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz4NCjxSZWxhdGlvbnNoaXBzIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvcGFja2FnZS8yMDA2L3JlbGF0aW9uc2hpcHMiPjxSZWxhdGlvbnNoaXAgSWQ9InJJZDIiIFR5cGU9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvcmVsYXRpb25zaGlwcy9tZXRhZGF0YS9jb3JlLXByb3BlcnRpZXMiIFRhcmdldD0iZG9jUHJvcHMvY29yZS54bWwiLz48UmVsYXRpb25zaGlwIElkPSJySWQzIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzL2V4dGVuZGVkLXByb3BlcnRpZXMiIFRhcmdldD0iZG9jUHJvcHMvYXBwLnhtbCIvPjxSZWxhdGlvbnNoaXAgSWQ9InJJZDEiIFR5cGU9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9vZmZpY2VEb2N1bWVudC8yMDA2L3JlbGF0aW9uc2hpcHMvb2ZmaWNlRG9jdW1lbnQiIFRhcmdldD0ieGwvd29ya2Jvb2sueG1sIi8+PC9SZWxhdGlvbnNoaXBzPlBLAwQUAAAAAAAAAAAAoO5MoDUCAAA1AgAAEAAAAGRvY1Byb3BzL2FwcC54bWw8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+DQo8UHJvcGVydGllcyB4bWxucz0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvZXh0ZW5kZWQtcHJvcGVydGllcyIgeG1sbnM6dnQ9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9vZmZpY2VEb2N1bWVudC8yMDA2L2RvY1Byb3BzVlR5cGVzIj48QXBwbGljYXRpb24+U2hlZXRKUzwvQXBwbGljYXRpb24+PEhlYWRpbmdQYWlycz48dnQ6dmVjdG9yIHNpemU9IjIiIGJhc2VUeXBlPSJ2YXJpYW50Ij48dnQ6dmFyaWFudD48dnQ6bHBzdHI+V29ya3NoZWV0czwvdnQ6bHBzdHI+PC92dDp2YXJpYW50Pjx2dDp2YXJpYW50Pjx2dDppND4xPC92dDppND48L3Z0OnZhcmlhbnQ+PC92dDp2ZWN0b3I+PC9IZWFkaW5nUGFpcnM+PFRpdGxlc09mUGFydHM+PHZ0OnZlY3RvciBzaXplPSIxIiBiYXNlVHlwZT0ibHBzdHIiPjx2dDpscHN0cj5SZW5kaWNpb248L3Z0Omxwc3RyPjwvdnQ6dmVjdG9yPjwvVGl0bGVzT2ZQYXJ0cz48L1Byb3BlcnRpZXM+UEsDBBQAAAAAAAAAAADWknwRWgEAAFoBAAARAAAAZG9jUHJvcHMvY29yZS54bWw8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+DQo8Y3A6Y29yZVByb3BlcnRpZXMgeG1sbnM6Y3A9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvbWV0YWRhdGEvY29yZS1wcm9wZXJ0aWVzIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOmRjdGVybXM9Imh0dHA6Ly9wdXJsLm9yZy9kYy90ZXJtcy8iIHhtbG5zOmRjbWl0eXBlPSJodHRwOi8vcHVybC5vcmcvZGMvZGNtaXR5cGUvIiB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIi8+UEsDBBQAAAAAAAAAAACo12qAFQgAABUIAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz4NCjxUeXBlcyB4bWxucz0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL3BhY2thZ2UvMjAwNi9jb250ZW50LXR5cGVzIiB4bWxuczp4c2Q9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hIiB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIj48RGVmYXVsdCBFeHRlbnNpb249InhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3htbCIvPjxEZWZhdWx0IEV4dGVuc2lvbj0iYmluIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm1zLWV4Y2VsLnNoZWV0LmJpbmFyeS5tYWNyb0VuYWJsZWQubWFpbiIvPjxEZWZhdWx0IEV4dGVuc2lvbj0idm1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LnZtbERyYXdpbmciLz48RGVmYXVsdCBFeHRlbnNpb249ImRhdGEiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQubW9kZWwrZGF0YSIvPjxEZWZhdWx0IEV4dGVuc2lvbj0iYm1wIiBDb250ZW50VHlwZT0iaW1hZ2UvYm1wIi8+PERlZmF1bHQgRXh0ZW5zaW9uPSJwbmciIENvbnRlbnRUeXBlPSJpbWFnZS9wbmciLz48RGVmYXVsdCBFeHRlbnNpb249ImdpZiIgQ29udGVudFR5cGU9ImltYWdlL2dpZiIvPjxEZWZhdWx0IEV4dGVuc2lvbj0iZW1mIiBDb250ZW50VHlwZT0iaW1hZ2UveC1lbWYiLz48RGVmYXVsdCBFeHRlbnNpb249IndtZiIgQ29udGVudFR5cGU9ImltYWdlL3gtd21mIi8+PERlZmF1bHQgRXh0ZW5zaW9uPSJqcGciIENvbnRlbnRUeXBlPSJpbWFnZS9qcGVnIi8+PERlZmF1bHQgRXh0ZW5zaW9uPSJqcGVnIiBDb250ZW50VHlwZT0iaW1hZ2UvanBlZyIvPjxEZWZhdWx0IEV4dGVuc2lvbj0idGlmIiBDb250ZW50VHlwZT0iaW1hZ2UvdGlmZiIvPjxEZWZhdWx0IEV4dGVuc2lvbj0idGlmZiIgQ29udGVudFR5cGU9ImltYWdlL3RpZmYiLz48RGVmYXVsdCBFeHRlbnNpb249InBkZiIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3BkZiIvPjxEZWZhdWx0IEV4dGVuc2lvbj0icmVscyIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1wYWNrYWdlLnJlbGF0aW9uc2hpcHMreG1sIi8+PE92ZXJyaWRlIFBhcnROYW1lPSIveGwvd29ya2Jvb2sueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LnNwcmVhZHNoZWV0bWwuc2hlZXQubWFpbit4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii94bC93b3Jrc2hlZXRzL3NoZWV0MS54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQuc3ByZWFkc2hlZXRtbC53b3Jrc2hlZXQreG1sIi8+PE92ZXJyaWRlIFBhcnROYW1lPSIveGwvdGhlbWUvdGhlbWUxLnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC50aGVtZSt4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii94bC9zdHlsZXMueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LnNwcmVhZHNoZWV0bWwuc3R5bGVzK3htbCIvPjxPdmVycmlkZSBQYXJ0TmFtZT0iL2RvY1Byb3BzL2NvcmUueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLXBhY2thZ2UuY29yZS1wcm9wZXJ0aWVzK3htbCIvPjxPdmVycmlkZSBQYXJ0TmFtZT0iL2RvY1Byb3BzL2FwcC54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQuZXh0ZW5kZWQtcHJvcGVydGllcyt4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii94bC9tZXRhZGF0YS54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQuc3ByZWFkc2hlZXRtbC5zaGVldE1ldGFkYXRhK3htbCIvPjwvVHlwZXM+UEsBAgAAFAAAAAAAAAAAAKQBhLi1AgAAtQIAABoAAAAAAAAAAAAAAAAAAAAAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzUEsBAgAAFAAAAAAAAAAAADAPiGveHQAA3h0AABMAAAAAAAAAAAAAAAAA7QIAAHhsL3RoZW1lL3RoZW1lMS54bWxQSwECAAAUAAAAAAAAAAAAVfQElFoEAABaBAAADQAAAAAAAAAAAAAAAAD8IAAAeGwvc3R5bGVzLnhtbFBLAQIAABQAAAAAAAAAAAA7/ND32gkAANoJAAAYAAAAAAAAAAAAAAAAAIElAAB4bC93b3Jrc2hlZXRzL3NoZWV0MS54bWxQSwECAAAUAAAAAAAAAAAAYIAAgYgDAACIAwAADwAAAAAAAAAAAAAAAACRLwAAeGwvbWV0YWRhdGEueG1sUEsBAgAAFAAAAAAAAAAAAHf2mCJFAQAARQEAAA8AAAAAAAAAAAAAAAAARjMAAHhsL3dvcmtib29rLnhtbFBLAQIAABQAAAAAAAAAAABKahH5TAIAAEwCAAALAAAAAAAAAAAAAAAAALg0AABfcmVscy8ucmVsc1BLAQIAABQAAAAAAAAAAACg7kygNQIAADUCAAAQAAAAAAAAAAAAAAAAAC03AABkb2NQcm9wcy9hcHAueG1sUEsBAgAAFAAAAAAAAAAAANaSfBFaAQAAWgEAABEAAAAAAAAAAAAAAAAAkDkAAGRvY1Byb3BzL2NvcmUueG1sUEsBAgAAFAAAAAAAAAAAAKjXaoAVCAAAFQgAABMAAAAAAAAAAAAAAAAAGTsAAFtDb250ZW50X1R5cGVzXS54bWxQSwUGAAAAAAoACgB7AgAAX0MAAAAA",
+            "excelName": "rendicion_Rendicion_prueba_numero_4.xlsx"
+          },
+          "webhookUrl": "https://n8n.srv908725.hstgr.cloud/webhook/aprobar-cierre",
+          "executionMode": "production"
+        }
+      ]
+    },
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "rendicion-aprobada",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -16,
+          -112
+        ],
+        "id": "90506358-ab3a-4ad7-af42-953bd9b7aac6",
+        "name": "Webhook",
+        "webhookId": "9f2ad302-8207-4dac-8ef2-9d7f7831f961"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.pagadorEmails }}",
+          "subject": "=Nueva Rendición Lista para Pagar - {{ $json.body.employeeName }}",
+          "emailType": "text",
+          "message": "=Hola,\n\nEl aprobador ha cerrado y aprobado una nueva rendición de gastos. Ya está habilitada en el sistema para que procedan con el pago.\n\nDetalles principales:\n- Empleado: {{ $json.body.employeeName }}\n- ID de Rendición: {{ $json.body.reportId }}\n\nPor favor, ingresen a la plataforma, realicen la transferencia y suban el comprobante usando el botón \"Pagar Rendición\".\n\nSaludos,\nSistema de Rendición de Gastos - SouthGenetics.",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          192,
+          -112
+        ],
+        "id": "ee64ae40-9334-45a9-a85a-d7766d6295ea",
+        "name": "Send a message",
+        "webhookId": "40ac7184-db5f-44b8-9747-4ffc4438ce7d",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "factura",
+          "options": {}
+        },
+        "id": "df50a9d3-7384-4d83-b36c-582e1fa9bbda",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -1120,
+          304
+        ],
+        "webhookId": "29d366ca-cf8c-4af2-8712-631e454ee8d0"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json.body.body.comprobante_url.toLowerCase() }}",
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "rightValue": ".pdf"
+              }
+            ],
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            }
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "id": "40ea01dd-d739-40fa-9ef3-4cd53182f632",
+        "name": "Es PDF?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -896,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "document",
+          "modelId": {
+            "__rl": true,
+            "value": "models/gemini-2.5-flash",
+            "mode": "list",
+            "cachedResultName": "models/gemini-2.5-flash"
+          },
+          "text": "Eres un extractor de datos de comprobantes y facturas. Analiza el archivo adjunto.\n\nExtrae:\n1. monto: El monto TOTAL final (decimal, sin simbolos ni puntos de miles). Ejemplo: 1500.50\n2. fecha: Fecha en formato YYYY-MM-DD. Ejemplo: 2026-03-04\n3. merchant_name: Nombre del comercio exactamente como aparece.\n\nResponde SOLO con JSON valido, sin texto adicional ni markdown:\n{\"monto\": 1500.50, \"fecha\": \"2026-03-04\", \"merchant_name\": \"Nombre\"}\n\nSi no podes leer un dato, usa null. NO uses 0 para monto.",
+          "documentUrls": "={{ $('Webhook').item.json.body.body.comprobante_url }}",
+          "options": {}
+        },
+        "id": "71e86e97-a4b3-43df-85ee-216414a7d47e",
+        "name": "Gemini PDF",
+        "type": "@n8n/n8n-nodes-langchain.googleGemini",
+        "typeVersion": 1.1,
+        "position": [
+          -672,
+          96
+        ],
+        "credentials": {
+          "googlePalmApi": {
+            "id": "yznXzHKtipKwo9vU",
+            "name": "GOOGLE RENDICION NICO"
+          }
+        },
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first().json;\nlet raw = '';\nif (item.content && item.content.parts && item.content.parts[0]) raw = item.content.parts[0].text;\nelse if (item.text) raw = item.text;\nraw = raw.replace(/\\x60\\x60\\x60json[\\n\\r]?/gi,'').replace(/\\x60\\x60\\x60/g,'').trim();\nlet parsed;\ntry { parsed = JSON.parse(raw); } catch(e) { parsed = {monto:null,fecha:null,merchant_name:null}; }\nif (parsed.monto === 0) parsed.monto = null;\nconst hasData = parsed.monto !== null || parsed.fecha !== null || parsed.merchant_name !== null;\nreturn [{ json: { ...parsed, _hasData: hasData } }];"
+        },
+        "id": "88b368e6-3f95-4fc8-b0cd-a806754a725a",
+        "name": "Parsear Gemini PDF",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -448,
+          160
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json._hasData }}",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                },
+                "rightValue": true
+              }
+            ],
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            }
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "id": "594eb9e0-c42e-40ec-a064-d5dc7fb7ff30",
+        "name": "Gemini PDF ok?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -224,
+          160
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "expenses",
+          "matchType": "allFilters",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $('Webhook').item.json.body.body.id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "amount",
+                "fieldValue": "={{ $json.monto }}"
+              },
+              {
+                "fieldId": "expense_date",
+                "fieldValue": "={{ $json.fecha }}"
+              },
+              {
+                "fieldId": "merchant_name",
+                "fieldValue": "={{ $json.merchant_name }}"
+              }
+            ]
+          }
+        },
+        "id": "98b3a975-88a8-4067-af63-a6109ab8ef09",
+        "name": "Guardar PDF",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          0,
+          208
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ITFllTGC6gsvFJM2",
+            "name": "Bon Voyage"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "image",
+          "operation": "analyze",
+          "modelId": {
+            "__rl": true,
+            "value": "gpt-4o",
+            "mode": "list",
+            "cachedResultName": "GPT-4O"
+          },
+          "text": "Eres un extractor de datos de comprobantes y facturas. Analiza el archivo adjunto.\n\nExtrae:\n1. monto: El monto TOTAL final (decimal, sin simbolos ni puntos de miles). Ejemplo: 1500.50\n2. fecha: Fecha en formato YYYY-MM-DD. Ejemplo: 2026-03-04\n3. merchant_name: Nombre del comercio exactamente como aparece.\n\nResponde SOLO con JSON valido, sin texto adicional ni markdown:\n{\"monto\": 1500.50, \"fecha\": \"2026-03-04\", \"merchant_name\": \"Nombre\"}\n\nSi no podes leer un dato, usa null. NO uses 0 para monto.",
+          "imageUrls": "={{ $('Webhook').item.json.body.body.comprobante_url }}",
+          "options": {
+            "maxTokens": 500
+          }
+        },
+        "id": "9e50bbde-2bb5-4bef-8b97-c3bb73420af7",
+        "name": "OpenAI PDF",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "exna64DQRx79bMtb",
+            "name": "OpenAI Acc"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first().json;\nlet raw = '';\n// Formato Chat API: item.message.content\nif (item.message && item.message.content) {\n  raw = item.message.content;\n// Formato Responses API: item.content[0].text\n} else if (item.content && Array.isArray(item.content) && item.content[0] && item.content[0].text) {\n  raw = item.content[0].text;\n// Formato array directo: item[0].content[0].text (cuando viene como array)\n} else if (Array.isArray(item) && item[0] && item[0].content && item[0].content[0]) {\n  raw = item[0].content[0].text || '';\n} else if (item.text) {\n  raw = item.text;\n}\nraw = raw.replace(/\\x60\\x60\\x60json[\\n\\r]?/gi,'').replace(/\\x60\\x60\\x60/g,'').trim();\nlet parsed;\ntry { parsed = JSON.parse(raw); } catch(e) { parsed = {monto:null,fecha:null,merchant_name:null}; }\nif (parsed.monto === 0) parsed.monto = null;\nconst hasData = parsed.monto !== null || parsed.fecha !== null || parsed.merchant_name !== null;\nreturn [{ json: { ...parsed, _hasData: hasData } }];"
+        },
+        "id": "50795e56-258b-4688-8765-9a4dbfa19a18",
+        "name": "Parsear OpenAI PDF",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          224,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json._hasData }}",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                },
+                "rightValue": true
+              }
+            ],
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            }
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "id": "ef94d317-e765-4397-a125-fabd85c866f7",
+        "name": "OpenAI PDF ok?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          448,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "expenses",
+          "matchType": "allFilters",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $('Webhook').item.json.body.body.id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "amount",
+                "fieldValue": "={{ $json.monto }}"
+              },
+              {
+                "fieldId": "expense_date",
+                "fieldValue": "={{ $json.fecha }}"
+              },
+              {
+                "fieldId": "merchant_name",
+                "fieldValue": "={{ $json.merchant_name }}"
+              }
+            ]
+          }
+        },
+        "id": "8acf1dab-3563-4334-8359-4304aa166073",
+        "name": "Guardar PDF OpenAI",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          672,
+          0
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ITFllTGC6gsvFJM2",
+            "name": "Bon Voyage"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "image",
+          "operation": "analyze",
+          "modelId": {
+            "__rl": true,
+            "value": "models/gemini-2.5-flash",
+            "mode": "list",
+            "cachedResultName": "models/gemini-2.5-flash"
+          },
+          "text": "Eres un extractor de datos de comprobantes y facturas. Analiza el archivo adjunto.\n\nExtrae:\n1. monto: El monto TOTAL final (decimal, sin simbolos ni puntos de miles). Ejemplo: 1500.50\n2. fecha: Fecha en formato YYYY-MM-DD. Ejemplo: 2026-03-04\n3. merchant_name: Nombre del comercio exactamente como aparece.\n\nResponde SOLO con JSON valido, sin texto adicional ni markdown:\n{\"monto\": 1500.50, \"fecha\": \"2026-03-04\", \"merchant_name\": \"Nombre\"}\n\nSi no podes leer un dato, usa null. NO uses 0 para monto.",
+          "imageUrls": "={{ $('Webhook').item.json.body.body.comprobante_url }}",
+          "options": {
+            "maxOutputTokens": 500
+          }
+        },
+        "id": "9a1d4cfb-e612-437c-9e3a-5f640b05cd36",
+        "name": "Gemini Imagen",
+        "type": "@n8n/n8n-nodes-langchain.googleGemini",
+        "typeVersion": 1.1,
+        "position": [
+          -672,
+          528
+        ],
+        "credentials": {
+          "googlePalmApi": {
+            "id": "yznXzHKtipKwo9vU",
+            "name": "GOOGLE RENDICION NICO"
+          }
+        },
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first().json;\nlet raw = '';\nif (item.content && item.content.parts && item.content.parts[0]) raw = item.content.parts[0].text;\nelse if (item.text) raw = item.text;\nraw = raw.replace(/\\x60\\x60\\x60json[\\n\\r]?/gi,'').replace(/\\x60\\x60\\x60/g,'').trim();\nlet parsed;\ntry { parsed = JSON.parse(raw); } catch(e) { parsed = {monto:null,fecha:null,merchant_name:null}; }\nif (parsed.monto === 0) parsed.monto = null;\nconst hasData = parsed.monto !== null || parsed.fecha !== null || parsed.merchant_name !== null;\nreturn [{ json: { ...parsed, _hasData: hasData } }];"
+        },
+        "id": "c781dc58-343b-4e91-bd39-895d45d1c4ff",
+        "name": "Parsear Gemini Imagen",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -448,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json._hasData }}",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                },
+                "rightValue": true
+              }
+            ],
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            }
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "id": "af78951a-ff7d-4ba5-b8cd-cdbe22d82987",
+        "name": "Gemini Imagen ok?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -224,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "expenses",
+          "matchType": "allFilters",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $('Webhook').item.json.body.body.id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "amount",
+                "fieldValue": "={{ $json.monto }}"
+              },
+              {
+                "fieldId": "expense_date",
+                "fieldValue": "={{ $json.fecha }}"
+              },
+              {
+                "fieldId": "merchant_name",
+                "fieldValue": "={{ $json.merchant_name }}"
+              }
+            ]
+          }
+        },
+        "id": "6d4c046c-c632-47cb-9f35-0ac6382b2b07",
+        "name": "Guardar Imagen",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          0,
+          656
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ITFllTGC6gsvFJM2",
+            "name": "Bon Voyage"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "image",
+          "operation": "analyze",
+          "modelId": {
+            "__rl": true,
+            "value": "gpt-4o",
+            "mode": "list",
+            "cachedResultName": "GPT-4O"
+          },
+          "text": "Eres un extractor de datos de comprobantes y facturas. Analiza el archivo adjunto.\n\nExtrae:\n1. monto: El monto TOTAL final (decimal, sin simbolos ni puntos de miles). Ejemplo: 1500.50\n2. fecha: Fecha en formato YYYY-MM-DD. Ejemplo: 2026-03-04\n3. merchant_name: Nombre del comercio exactamente como aparece.\n\nResponde SOLO con JSON valido, sin texto adicional ni markdown:\n{\"monto\": 1500.50, \"fecha\": \"2026-03-04\", \"merchant_name\": \"Nombre\"}\n\nSi no podes leer un dato, usa null. NO uses 0 para monto.",
+          "imageUrls": "={{ $('Webhook').item.json.body.body.comprobante_url }}",
+          "options": {
+            "maxTokens": 500
+          }
+        },
+        "id": "21e461d9-581e-41e1-abdf-71f57a360aa2",
+        "name": "OpenAI Imagen",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          432
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "exna64DQRx79bMtb",
+            "name": "OpenAI Acc"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first().json;\nlet raw = '';\n// Formato Chat API: item.message.content\nif (item.message && item.message.content) {\n  raw = item.message.content;\n// Formato Responses API: item.content[0].text\n} else if (item.content && Array.isArray(item.content) && item.content[0] && item.content[0].text) {\n  raw = item.content[0].text;\n// Formato array directo: item[0].content[0].text (cuando viene como array)\n} else if (Array.isArray(item) && item[0] && item[0].content && item[0].content[0]) {\n  raw = item[0].content[0].text || '';\n} else if (item.text) {\n  raw = item.text;\n}\nraw = raw.replace(/\\x60\\x60\\x60json[\\n\\r]?/gi,'').replace(/\\x60\\x60\\x60/g,'').trim();\nlet parsed;\ntry { parsed = JSON.parse(raw); } catch(e) { parsed = {monto:null,fecha:null,merchant_name:null}; }\nif (parsed.monto === 0) parsed.monto = null;\nconst hasData = parsed.monto !== null || parsed.fecha !== null || parsed.merchant_name !== null;\nreturn [{ json: { ...parsed, _hasData: hasData } }];"
+        },
+        "id": "2ce0c01c-2c3a-4580-95a0-53116bec3ad5",
+        "name": "Parsear OpenAI Imagen",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          224,
+          432
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json._hasData }}",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                },
+                "rightValue": true
+              }
+            ],
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            }
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "id": "15c0a5bc-2e26-428a-bf47-0e84123c6fd6",
+        "name": "OpenAI Imagen ok?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          448,
+          432
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "expenses",
+          "matchType": "allFilters",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $('Webhook').item.json.body.body.id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "amount",
+                "fieldValue": "={{ $json.monto }}"
+              },
+              {
+                "fieldId": "expense_date",
+                "fieldValue": "={{ $json.fecha }}"
+              },
+              {
+                "fieldId": "merchant_name",
+                "fieldValue": "={{ $json.merchant_name }}"
+              }
+            ]
+          }
+        },
+        "id": "41245b0d-0464-47f0-8a3f-d62ceffa168f",
+        "name": "Guardar Imagen OpenAI",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          672,
+          432
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ITFllTGC6gsvFJM2",
+            "name": "Bon Voyage"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Es PDF?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Es PDF?": {
+        "main": [
+          [
+            {
+              "node": "Gemini PDF",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Gemini Imagen",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gemini PDF": {
+        "main": [
+          [
+            {
+              "node": "Parsear Gemini PDF",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "OpenAI PDF",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "OpenAI PDF",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parsear Gemini PDF": {
+        "main": [
+          [
+            {
+              "node": "Gemini PDF ok?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gemini PDF ok?": {
+        "main": [
+          [
+            {
+              "node": "Guardar PDF",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "OpenAI PDF",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI PDF": {
+        "main": [
+          [
+            {
+              "node": "Parsear OpenAI PDF",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parsear OpenAI PDF": {
+        "main": [
+          [
+            {
+              "node": "OpenAI PDF ok?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI PDF ok?": {
+        "main": [
+          [
+            {
+              "node": "Guardar PDF OpenAI",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gemini Imagen": {
+        "main": [
+          [
+            {
+              "node": "Parsear Gemini Imagen",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "OpenAI Imagen",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "OpenAI Imagen",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parsear Gemini Imagen": {
+        "main": [
+          [
+            {
+              "node": "Gemini Imagen ok?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gemini Imagen ok?": {
+        "main": [
+          [
+            {
+              "node": "Guardar Imagen",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "OpenAI Imagen",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Imagen": {
+        "main": [
+          [
+            {
+              "node": "Parsear OpenAI Imagen",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parsear OpenAI Imagen": {
+        "main": [
+          [
+            {
+              "node": "OpenAI Imagen ok?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Imagen ok?": {
+        "main": [
+          [
+            {
+              "node": "Guardar Imagen OpenAI",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+
+  {
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "notificaciones",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -640,
+          240
+        ],
+        "id": "a1b2c3d4-noti-webhook-0001-000000000001",
+        "name": "Webhook",
+        "webhookId": "f8e3a1b2-4c5d-6e7f-8a9b-0c1d2e3f4a5b"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "noti-type-revision",
+                      "leftValue": "={{ $json.body.type }}",
+                      "rightValue": "noti_revision",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "revision"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "noti-type-cierre",
+                      "leftValue": "={{ $json.body.type }}",
+                      "rightValue": "noti_cierre_e",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "cierre"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          -416,
+          240
+        ],
+        "id": "a1b2c3d4-noti-switch-0002-000000000002",
+        "name": "Tipo de notificacion"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.body.employee.email }}",
+          "subject": "=Actualizacion de revision de tu rendicion",
+          "message": "=<p>Hola <b>{{ $json.body.employee.nombre }}</b>,</p>\n\n<p>Tu supervisor <b>{{ $json.body.supervisor.nombre }}</b> reviso los gastos de tu rendicion semanal.</p>\n\n<p><b>Resumen:</b></p>\n<ul>\n  <li><b>Total gastos:</b> {{ $json.body.resumen_gastos.total }}</li>\n  <li><b>Aprobados:</b> {{ $json.body.resumen_gastos.aprobados }}</li>\n  <li><b>Rechazados:</b> {{ $json.body.resumen_gastos.rechazados }}</li>\n  <li><b>En revision:</b> {{ $json.body.resumen_gastos.en_revision }}</li>\n  <li><b>Pendientes:</b> {{ $json.body.resumen_gastos.pendientes }}</li>\n</ul>\n\n<p>\n  {{ $json.body.resumen_gastos.todos_aprobados\n    ? 'Todos los gastos fueron aprobados. Ya podes enviar la rendicion a revision final.'\n    : 'Hay gastos que requieren tu atencion. Por favor ingresa al sistema para corregirlos o apelarlos.' }}\n</p>\n\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/reports/{{ $json.body.report_id }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Ver mi rendicion\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendicion de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          -128,
+          96
+        ],
+        "id": "a1b2c3d4-noti-gmail-rev-0003-000000000003",
+        "name": "Mail revision empleado",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $('Webhook').first().json.body || {};\n\nconst supervisorEmails = (body.supervisors || [])\n  .map((s) => (s.email || '').trim())\n  .filter(Boolean)\n  .join(',');\n\nconst hasExcel = Boolean(body.excel?.base64);\n\nconst item = {\n  json: {\n    supervisorEmails,\n    hasSupervisors: supervisorEmails.length > 0,\n    hasExcel,\n    reportId: body.report_id || '',\n    employeeName: body.employee?.nombre || 'Empleado',\n    employeeEmail: body.employee?.email || '',\n    employeeId: body.employee?.id || '',\n  },\n  binary: {},\n};\n\nif (hasExcel) {\n  const raw = String(body.excel.base64);\n  item.binary.adjunto_excel = {\n    data: raw.includes(',') ? raw.split(',')[1] : raw,\n    mimeType:\n      body.excel.contentType ||\n      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n    fileName: body.excel.filename || 'Rendicion.xlsx',\n  };\n}\n\nreturn [item];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -128,
+          384
+        ],
+        "id": "a1b2c3d4-noti-code-cierre-0004-000000000004",
+        "name": "Preparar cierre"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "has-supervisor-emails",
+                "leftValue": "={{ $json.hasSupervisors }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          96,
+          384
+        ],
+        "id": "a1b2c3d4-noti-if-cierre-0005-000000000005",
+        "name": "Hay supervisores?"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "has-excel-attachment",
+                "leftValue": "={{ $json.hasExcel }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          320,
+          384
+        ],
+        "id": "a1b2c3d4-noti-if-excel-0007-000000000007",
+        "name": "Tiene Excel?"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.supervisorEmails }}",
+          "subject": "={{ $json.employeeName }} cerro su rendicion semanal",
+          "message": "=<p>Hola,</p>\n\n<p>\n  Te informamos que <b>{{ $json.employeeName }}</b> cerro su rendicion semanal de gastos\n  y quedo lista para tu revision.\n</p>\n\n<p>\n  Por favor ingresa a la plataforma para revisar los gastos, aprobarlos, rechazarlos\n  o solicitar correcciones.\n</p>\n\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/aprobador/reports/{{ $json.reportId }}?returnTo=%2Fdashboard%2Faprobador%2Femployee%2F{{ $json.employeeId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Revisar rendicion\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendicion de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          544,
+          480
+        ],
+        "id": "a1b2c3d4-noti-gmail-cierre-0006-000000000006",
+        "name": "Mail cierre sin Excel",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.supervisorEmails }}",
+          "subject": "={{ $json.employeeName }} cerro su rendicion semanal",
+          "message": "=<p>Hola,</p>\n\n<p>\n  Te informamos que <b>{{ $json.employeeName }}</b> cerro su rendicion semanal de gastos\n  y quedo lista para tu revision.\n</p>\n\n<p>\n  Adjuntamos el resumen en Excel para tu control.\n</p>\n\n<p>\n  Por favor ingresa a la plataforma para revisar los gastos, aprobarlos, rechazarlos\n  o solicitar correcciones.\n</p>\n\n<br>\n<p>\n  <a href=\"https://rendicion.southgenetics.com/dashboard/aprobador/reports/{{ $json.reportId }}?returnTo=%2Fdashboard%2Faprobador%2Femployee%2F{{ $json.employeeId }}\" style=\"background-color: #6d28d9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n    Revisar rendicion\n  </a>\n</p>\n<br>\n<p>\n  Saludos,<br>\n  <b>Sistema de Rendicion de Gastos - SouthGenetics.</b>\n</p>",
+          "options": {
+            "attachmentsUi": {
+              "attachmentsBinary": [
+                {
+                  "property": "adjunto_excel"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          544,
+          288
+        ],
+        "id": "a1b2c3d4-noti-gmail-cierre-0008-000000000008",
+        "name": "Mail cierre con Excel",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "JzPmY9tkm4RA3G6D",
+            "name": "Nico alvez rendiciones"
+          }
+        },
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Tipo de notificacion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tipo de notificacion": {
+        "main": [
+          [
+            {
+              "node": "Mail revision empleado",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Preparar cierre",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar cierre": {
+        "main": [
+          [
+            {
+              "node": "Hay supervisores?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hay supervisores?": {
+        "main": [
+          [
+            {
+              "node": "Tiene Excel?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tiene Excel?": {
+        "main": [
+          [
+            {
+              "node": "Mail cierre con Excel",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Mail cierre sin Excel",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "22e39e38cee04a5bdc3ed84fb564e7b1914e6ecadb2b9eb668734c43cb5d756d"
+    }
+  }
+

@@ -2,7 +2,7 @@
 
 const N8N_NOTIFY_WEBHOOK_URL =
   process.env.NEXT_PUBLIC_N8N_NOTIFY_WEBHOOK_URL ??
-  'https://n8n.srv908725.hstgr.cloud/webhook/notificaciones';
+  'https://n8n.southgenetics.com/webhook/notificaciones';
 
 interface UserInfo {
   id: string;

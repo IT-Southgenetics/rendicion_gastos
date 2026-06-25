@@ -1,6 +1,6 @@
 const N8N_WEBHOOK_URL =
   process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL ??
-  "https://n8n.srv908725.hstgr.cloud/webhook/factura";
+  "https://n8n.southgenetics.com/webhook/factura";
 
 interface ExpenseWebhookPayload {
   id: string;

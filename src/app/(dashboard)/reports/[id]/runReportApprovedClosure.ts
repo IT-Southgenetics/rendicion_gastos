@@ -74,7 +74,7 @@ export async function runReportApprovedClosure(
   const webhookUrl =
     process.env.N8N_WEBHOOK_URL_APROBAR_CIERRE ??
     process.env.N8N_WEBHOOK_URL_RENDICION_APROBADA ??
-    "https://n8n.srv908725.hstgr.cloud/webhook/aprobar-cierre";
+    "https://n8n.southgenetics.com/webhook/aprobar-cierre";
   if (webhookUrl) {
     const { data: chusmasData, error: chusmasError } = await supabase
       .from("profiles")

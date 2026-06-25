@@ -112,7 +112,7 @@ En el webhook de pago también se envía:
 ---
 ## Webhook factura (OCR/lectura ticket)
 
-Webhook `https://n8n.srv908725.hstgr.cloud/webhook/factura` se dispara al crear un **nuevo gasto**:
+Webhook `https://n8n.southgenetics.com/webhook/factura` se dispara al crear un **nuevo gasto**:
 - Utilidad: `src/lib/n8n/sendExpenseWebhook.ts`
 - Disparo: `src/components/expenses/NewExpenseForm.tsx` (luego del INSERT exitoso)
 
